@@ -191,10 +191,11 @@
   <nav class="tabs">
     <button class="tab on" data-p="audio">1 · Audio</button>
     <button class="tab" data-p="lyrics">2 · Paroles</button>
-    <button class="tab" data-p="sync">3 · Synchro</button>
-    <button class="tab" data-p="bg">4 · Fond</button>
-    <button class="tab" data-p="style">5 · Style</button>
-    <button class="tab" data-p="export">6 · Export</button>
+    <button class="tab" data-p="auto">3 · Auto</button>
+    <button class="tab" data-p="sync">4 · Synchro</button>
+    <button class="tab" data-p="bg">5 · Fond</button>
+    <button class="tab" data-p="style">6 · Style</button>
+    <button class="tab" data-p="export">7 · Export</button>
   </nav>
 
   <!-- 1 AUDIO -->
@@ -232,7 +233,55 @@
     </div>
   </section>
 
-  <!-- 3 SYNCHRO -->
+  <!-- 3 AUTO -->
+  <section class="pane" id="p-auto">
+    <div class="card">
+      <h2>Transcription automatique</h2>
+      <p class="hint">L'audio est découpé en tranches, envoyé à un service de reconnaissance vocale, et te revient avec l'horodatage de chaque mot. Prévois environ une minute de traitement pour quatre minutes de chanson.</p>
+
+      <label class="field">Langue chantée</label>
+      <select id="asrLang">
+        <option value="auto">Détection automatique</option>
+        <option value="fr">Français</option>
+        <option value="en">Anglais</option>
+        <option value="es">Espagnol</option>
+        <option value="ar">Arabe</option>
+        <option value="pt">Portugais</option>
+      </select>
+
+      <label class="field">Que faire du résultat</label>
+      <select id="asrMode">
+        <option value="align">J'ai déjà mes paroles — cale-les sur l'audio</option>
+        <option value="write">Je n'ai pas de texte — écris les paroles pour moi</option>
+      </select>
+      <p class="hint" id="asrModeNote" style="margin-top:6px">Tes paroles de l'onglet 2 restent intactes : seuls les repères de temps sont calculés à partir de ce qui est chanté.</p>
+
+      <div class="btns">
+        <button class="mint" id="asrBtn">Lancer la transcription</button>
+        <button class="ghost danger" id="asrCancel" disabled>Annuler</button>
+      </div>
+      <div class="bar"><i id="asrBar"></i></div>
+      <div class="status" id="asrStatus"></div>
+    </div>
+
+    <div class="card" id="asrResultCard" style="display:none">
+      <h2>Résultat</h2>
+      <div class="status" id="asrScore" style="margin-bottom:8px"></div>
+      <textarea id="asrText" style="min-height:130px"></textarea>
+      <div class="btns">
+        <button class="primary" id="asrApply">Appliquer aux paroles</button>
+        <button class="ghost" id="asrToLyrics">Copier dans l'onglet Paroles</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Relis toujours le résultat. Sur une chanson, la reconnaissance se trompe sur les mots couverts par la musique. Corrige dans l'onglet Synchro : les repères de temps, eux, sont fiables.</p>
+    </div>
+
+    <div class="card">
+      <h2>Avant de t'en servir</h2>
+      <p class="hint" style="margin:0">Cette fonction a besoin d'une clé <strong>OPENAI_API_KEY</strong> ajoutée dans les réglages du projet sur Vercel (Settings → Environment Variables), puis d'un redéploiement. Le coût est d'environ 0,006 $ par minute d'audio traitée. Sans clé, tout le reste de l'application fonctionne normalement.</p>
+    </div>
+  </section>
+
+  <!-- 4 SYNCHRO -->
   <section class="pane" id="p-sync">
     <div class="card">
       <h2>Synchroniser</h2>
@@ -306,22 +355,46 @@
       <h2>Spectre audio</h2>
       <label class="field">Type de spectre</label>
       <select id="specType">
+        <option value="flow" selected>Onde fluide arc-en-ciel</option>
+        <option value="vortex">Tourbillon arc-en-ciel</option>
         <option value="bars">Barres en bas</option>
         <option value="mirror">Barres miroir (centre)</option>
         <option value="circle">Cercle autour du centre</option>
-        <option value="wave">Onde fluide</option>
+        <option value="wave">Onde simple</option>
         <option value="dots">Points suspendus</option>
         <option value="none">Aucun</option>
       </select>
       <label class="field">Hauteur du spectre</label>
-      <input type="range" id="specSize" min="5" max="100" value="35">
+      <input type="range" id="specSize" min="5" max="100" value="45">
       <label class="field">Nombre de barres</label>
       <input type="range" id="specCount" min="16" max="128" value="64">
       <label class="field">Réactivité</label>
       <input type="range" id="specSmooth" min="0" max="95" value="70">
-      <label class="field">Couleur du spectre</label>
-      <input type="color" id="specColor" value="#FFB84D">
-      <div class="swatches" id="swatches"></div>
+
+      <div id="flowOpts">
+        <label class="field">Vitesse du courant</label>
+        <input type="range" id="flowSpeed" min="0" max="100" value="35">
+        <label class="field">Turbulence</label>
+        <input type="range" id="flowTurb" min="0" max="100" value="55">
+        <label class="field">Nombre de rubans</label>
+        <input type="range" id="flowLayers" min="1" max="7" value="4">
+        <label class="field">Épaisseur</label>
+        <input type="range" id="flowThick" min="2" max="60" value="18">
+        <label class="field">Halo lumineux</label>
+        <input type="range" id="flowGlow" min="0" max="100" value="55">
+        <label class="field">Étendue des couleurs</label>
+        <input type="range" id="flowSpread" min="20" max="360" value="300">
+        <label class="field">Dérive des teintes avec les décibels</label>
+        <input type="range" id="flowShift" min="0" max="100" value="60">
+        <label class="field">Position verticale du courant</label>
+        <input type="range" id="flowPos" min="10" max="90" value="72">
+      </div>
+
+      <div id="plainOpts">
+        <label class="field">Couleur du spectre</label>
+        <input type="color" id="specColor" value="#FFB84D">
+        <div class="swatches" id="swatches"></div>
+      </div>
     </div>
     <div class="card">
       <h2>Texte des paroles</h2>
@@ -450,6 +523,7 @@ function initAudioGraph(){
 
 $('audioFile').onchange = e=>{
   const f = e.target.files[0]; if(!f) return;
+  sourceFile = f;
   audio.src = URL.createObjectURL(f);
   audio.load();
   $('audioLabel').classList.add('loaded');
@@ -763,6 +837,12 @@ function drawSpectrum(W,H,bass){
   ctx.fillStyle=color; ctx.strokeStyle=color;
   ctx.shadowColor=color; ctx.shadowBlur=W*0.012;
 
+  if(type==='flow'||type==='vortex'){
+    drawFluid(type,W,H,vals,bass,n);
+    ctx.restore();
+    return;
+  }
+
   if(type==='bars'||type==='dots'){
     const gap=W/n*0.25, bw=W/n-gap;
     for(let i=0;i<n;i++){
@@ -814,6 +894,115 @@ function drawSpectrum(W,H,bass){
   }
   ctx.restore();
 }
+/* ---- Onde fluide et tourbillon arc-en-ciel ----
+   Les rubans ondulent selon plusieurs sinusoïdes superposées (l'effet « eau »),
+   leur amplitude suit le spectre, et la teinte parcourt l'arc-en-ciel en
+   dérivant selon le niveau sonore. */
+let flowT = 0, lastFrame = performance.now(), levelSmooth = 0;
+
+function fbm(x, t){
+  return Math.sin(x*1.0 + t*1.00)*0.50
+       + Math.sin(x*2.3 - t*1.37)*0.28
+       + Math.sin(x*4.1 + t*0.83)*0.14
+       + Math.sin(x*7.7 - t*1.91)*0.08;
+}
+
+function drawFluid(type,W,H,vals,bass,n){
+  const now = performance.now();
+  const dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+  const speed = +$('flowSpeed').value/100;
+  flowT += dt*(0.25+speed*2.2);
+
+  const size    = +$('specSize').value/100;
+  const turb    = +$('flowTurb').value/100;
+  const layers  = +$('flowLayers').value;
+  const thick   = +$('flowThick').value/1000;
+  const glow    = +$('flowGlow').value/100;
+  const spread  = +$('flowSpread').value;
+  const shift   = +$('flowShift').value/100;
+  const posY    = H*(+$('flowPos').value/100);
+
+  // niveau global lissé : c'est lui qui fait dériver les couleurs
+  let lvl=0; for(let i=0;i<n;i++) lvl+=vals[i];
+  lvl/=n;
+  levelSmooth = levelSmooth*0.88 + lvl*0.12;
+  const hueBase = (flowT*14 + levelSmooth*360*shift) % 360;
+
+  const SEG = 96;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowBlur = glow * Math.min(W,H) * 0.035;
+
+  for(let l=0; l<layers; l++){
+    const lf = layers>1 ? l/(layers-1) : 0;        // 0 → 1 selon le ruban
+    const depth = 0.45 + 0.55*(1-lf);              // les rubans du fond sont plus fins
+    const phase = l*1.9;
+    const amp = (0.10 + 0.90*depth) * size;
+
+    ctx.lineWidth = Math.max(1.2, Math.min(W,H)*thick*depth);
+    ctx.globalAlpha = 0.30 + 0.55*depth;
+
+    const pts=[];
+    for(let k=0;k<=SEG;k++){
+      const u = k/SEG;
+      const bin = Math.min(n-1, Math.floor(u*n));
+      // amplitude issue du spectre, adoucie par ses voisins
+      const v = (vals[Math.max(0,bin-1)] + vals[bin]*2 + vals[Math.min(n-1,bin+1)])/4;
+      const wobble = fbm(u*5.5 + phase, flowT) * turb;
+      const push = (v*0.75 + 0.25) * amp;
+
+      if(type==='flow'){
+        const y = posY - (wobble*H*0.16*push*2.2) - v*H*0.30*amp;
+        pts.push([u*W, y]);
+      } else {
+        const R = Math.min(W,H)*(0.16 + 0.10*lf) * (1 + bass*0.10);
+        const a = u*Math.PI*2 + flowT*(0.30+0.20*lf) + phase*0.35;
+        const r = R + (wobble*0.45 + v*1.15) * Math.min(W,H)*0.16*amp;
+        pts.push([W/2 + Math.cos(a)*r, H*0.5 + Math.sin(a)*r*0.92]);
+      }
+    }
+
+    // tracé segment par segment pour que la teinte évolue le long du ruban
+    for(let k=0;k<SEG;k++){
+      const u=k/SEG;
+      const hue = (hueBase + u*spread + lf*45) % 360;
+      const light = 55 + 18*Math.min(1, vals[Math.min(n-1,Math.floor(u*n))]*1.6);
+      const col = 'hsl('+hue.toFixed(0)+' 95% '+light.toFixed(0)+'%)';
+      ctx.strokeStyle = col;
+      ctx.shadowColor = col;
+      const p0 = pts[Math.max(0,k-1)], p1 = pts[k], p2 = pts[k+1], p3 = pts[Math.min(SEG,k+2)];
+      ctx.beginPath();
+      ctx.moveTo(p1[0], p1[1]);
+      // Catmull-Rom converti en Bézier : donne la souplesse d'un fluide
+      ctx.bezierCurveTo(
+        p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6,
+        p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6,
+        p2[0], p2[1]
+      );
+      ctx.stroke();
+    }
+
+    // voile translucide sous le ruban : donne la masse d'eau
+    if(type==='flow' && l===layers-1){
+      ctx.globalAlpha = 0.12 + 0.10*levelSmooth;
+      const g = ctx.createLinearGradient(0,0,W,0);
+      for(let s=0;s<=6;s++){
+        g.addColorStop(s/6, 'hsl('+((hueBase+s/6*spread)%360).toFixed(0)+' 90% 55%)');
+      }
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for(let k=1;k<=SEG;k++) ctx.lineTo(pts[k][0], pts[k][1]);
+      ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+    }
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+}
+
 function roundRect(x,y,w,h,r){
   ctx.beginPath();
   ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
@@ -968,6 +1157,205 @@ async function keepAwake(on){
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible' && recording) keepAwake(true);
 });
+/* ---------- Transcription automatique ---------- */
+let asrAbort = false, asrWords = [];
+let sourceFile = null;
+
+$('asrMode').onchange = ()=>{
+  $('asrModeNote').textContent = $('asrMode').value==='align'
+    ? "Tes paroles de l'onglet 2 restent intactes : seuls les repères de temps sont calculés à partir de ce qui est chanté."
+    : "Le texte entendu deviendra tes paroles, déjà découpées en phrases et horodatées.";
+};
+
+/* Ré-échantillonne en 16 kHz mono, le format attendu par la reconnaissance */
+async function toMono16k(file){
+  const ac = new (window.AudioContext||window.webkitAudioContext)();
+  const buf = await ac.decodeAudioData(await file.arrayBuffer());
+  const len = Math.ceil(buf.duration*16000);
+  const off = new OfflineAudioContext(1, len, 16000);
+  const src = off.createBufferSource();
+  src.buffer = buf; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  ac.close();
+  return out.getChannelData(0);
+}
+
+function wavFromPcm(f32){
+  const n=f32.length, b=new ArrayBuffer(44+n*2), v=new DataView(b);
+  const put=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  put(0,'RIFF'); v.setUint32(4,36+n*2,true); put(8,'WAVE'); put(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,16000,true); v.setUint32(28,32000,true);
+  v.setUint16(32,2,true); v.setUint16(34,16,true); put(36,'data'); v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){
+    const s=Math.max(-1,Math.min(1,f32[i]));
+    v.setInt16(44+i*2, s<0? s*0x8000 : s*0x7FFF, true);
+  }
+  return new Blob([b],{type:'audio/wav'});
+}
+
+$('asrCancel').onclick = ()=>{ asrAbort=true; setAsr('Annulation en cours…','warn'); };
+
+$('asrBtn').onclick = async ()=>{
+  if(!sourceFile){ setAsr("Choisis d'abord un fichier audio dans l'onglet 1.",'err'); return; }
+  asrAbort=false; asrWords=[];
+  $('asrBtn').disabled=true; $('asrCancel').disabled=false;
+  $('asrBar').style.width='0%';
+  setAsr('Préparation de l\'audio…','warn');
+
+  let pcm;
+  try{ pcm = await toMono16k(sourceFile); }
+  catch(e){ setAsr("Ce fichier audio n'a pas pu être décodé.",'err'); resetAsrBtns(); return; }
+
+  const CHUNK = 50*16000;           // tranches de 50 s
+  const total = Math.ceil(pcm.length/CHUNK);
+
+  for(let i=0;i<total;i++){
+    if(asrAbort){ setAsr('Transcription annulée.','warn'); resetAsrBtns(); return; }
+    setAsr('Transcription — tranche '+(i+1)+' sur '+total+'…','warn');
+    const slice = pcm.subarray(i*CHUNK, Math.min(pcm.length,(i+1)*CHUNK));
+    const offset = i*50;
+    try{
+      const r = await fetch('/api/transcribe',{
+        method:'POST',
+        headers:{'Content-Type':'audio/wav','X-Language':$('asrLang').value},
+        body: wavFromPcm(slice)
+      });
+      const d = await r.json();
+      if(!r.ok){ setAsr(d.error || 'La transcription a échoué.','err'); resetAsrBtns(); return; }
+      (d.words||[]).forEach(w=> asrWords.push({w:w.w, s:w.s+offset, e:w.e+offset}));
+    }catch(e){
+      setAsr("Connexion au serveur impossible. Vérifie que l'application est bien déployée sur Vercel.",'err');
+      resetAsrBtns(); return;
+    }
+    $('asrBar').style.width = ((i+1)/total*100).toFixed(0)+'%';
+  }
+
+  if(!asrWords.length){ setAsr("Aucune parole n'a été détectée dans cet audio.",'err'); resetAsrBtns(); return; }
+
+  const heard = asrWords.map(w=>w.w).join(' ').replace(/\s+([,.!?])/g,'$1').trim();
+  $('asrText').value = heard;
+  $('asrResultCard').style.display='block';
+  setAsr(asrWords.length+' mots reconnus.','');
+  resetAsrBtns();
+
+  if($('asrMode').value==='align' && lyrics.length){ applyAlignment(); }
+  else { buildLyricsFromAsr(); }
+  $('asrResultCard').scrollIntoView({behavior:'smooth',block:'center'});
+};
+function resetAsrBtns(){ $('asrBtn').disabled=false; $('asrCancel').disabled=true; }
+function setAsr(m,c){ const s=$('asrStatus'); s.textContent=m; s.className='status '+(c||''); }
+
+$('asrApply').onclick = ()=>{
+  if(!asrWords.length){ return; }
+  if($('asrMode').value==='align' && lyrics.length) applyAlignment();
+  else buildLyricsFromAsr();
+};
+$('asrToLyrics').onclick = ()=>{
+  $('lyricsInput').value = $('asrText').value;
+  alert("Texte copié dans l'onglet Paroles.");
+};
+
+/* Mode « écris pour moi » : découpe le flux de mots en phrases horodatées */
+function buildLyricsFromAsr(){
+  const out=[]; let cur=[]; let start=null;
+  for(let i=0;i<asrWords.length;i++){
+    const w=asrWords[i];
+    if(start===null) start=w.s;
+    cur.push(w.w.trim());
+    const nextGap = i<asrWords.length-1 ? asrWords[i+1].s - w.e : 99;
+    const line = cur.join(' ');
+    const tooLong = line.length>40;
+    const punct = /[.!?,;]$/.test(w.w.trim());
+    if(tooLong || nextGap>0.7 || punct && line.length>18 || i===asrWords.length-1){
+      out.push({text:line.replace(/\s+([,.!?])/g,'$1').trim(), time:start});
+      cur=[]; start=null;
+    }
+  }
+  lyrics = out.filter(l=>l.text);
+  $('lyricsInput').value = lyrics.map(l=>l.text).join('\n');
+  syncIdx=0; renderSyncList();
+  $('asrScore').textContent = lyrics.length+' phrases écrites et horodatées. Vérifie-les dans l\'onglet Synchro.';
+  $('asrScore').className='status';
+}
+
+/* Mode « cale mes paroles » : alignement mot à mot entre ton texte et l'audio */
+function norm(s){
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9' ]/g,' ').replace(/\s+/g,' ').trim();
+}
+function applyAlignment(){
+  const heardTok = asrWords.map((w,i)=>({t:norm(w.w), i}))
+                           .filter(o=>o.t.length);
+  // jetons du texte de l'utilisateur, en gardant le numéro de ligne
+  const userTok=[];
+  lyrics.forEach((l,li)=>{
+    if(!l.text) return;
+    norm(l.text).split(' ').forEach(t=>{ if(t) userTok.push({t, li}); });
+  });
+  if(!userTok.length || !heardTok.length){
+    $('asrScore').textContent="Charge d'abord tes paroles dans l'onglet 2.";
+    $('asrScore').className='status err'; return;
+  }
+
+  const A=userTok.length, B=heardTok.length;
+  const GAP=-1, MATCH=2, MISS=-1;
+  // Needleman-Wunsch avec matrice de retour compacte
+  let prev=new Int32Array(B+1), curr=new Int32Array(B+1);
+  const back=new Uint8Array((A+1)*(B+1)); // 1=diag 2=haut 3=gauche
+  for(let j=0;j<=B;j++){ prev[j]=j*GAP; back[j]=3; }
+  for(let i=1;i<=A;i++){
+    curr[0]=i*GAP; back[i*(B+1)]=2;
+    const ut=userTok[i-1].t;
+    for(let j=1;j<=B;j++){
+      const same = ut===heardTok[j-1].t;
+      let best=prev[j-1]+(same?MATCH:MISS), dir=1;
+      const up=prev[j]+GAP; if(up>best){ best=up; dir=2; }
+      const le=curr[j-1]+GAP; if(le>best){ best=le; dir=3; }
+      curr[j]=best; back[i*(B+1)+j]=dir;
+    }
+    const t=prev; prev=curr; curr=t;
+  }
+
+  // remontée : premier mot entendu correspondant à chaque ligne
+  const lineStart=new Map(); let matched=0;
+  let i=A, j=B;
+  while(i>0 && j>0){
+    const dir=back[i*(B+1)+j];
+    if(dir===1){
+      if(userTok[i-1].t===heardTok[j-1].t){
+        lineStart.set(userTok[i-1].li, asrWords[heardTok[j-1].i].s);
+        matched++;
+      }
+      i--; j--;
+    } else if(dir===2) i--;
+    else j--;
+  }
+
+  // application + interpolation des lignes sans correspondance
+  let applied=0;
+  lyrics.forEach((l,li)=>{ if(lineStart.has(li)){ l.time=lineStart.get(li); applied++; } });
+  for(let k=0;k<lyrics.length;k++){
+    if(lyrics[k].time!=null || !lyrics[k].text) continue;
+    let a=k-1; while(a>=0 && lyrics[a].time==null) a--;
+    let b=k+1; while(b<lyrics.length && lyrics[b].time==null) b++;
+    if(a>=0 && b<lyrics.length) lyrics[k].time = lyrics[a].time + (lyrics[b].time-lyrics[a].time)*((k-a)/(b-a));
+    else if(a>=0) lyrics[k].time = lyrics[a].time + 2.5*(k-a);
+  }
+  // garantit un ordre croissant
+  for(let k=1;k<lyrics.length;k++){
+    if(lyrics[k].time!=null && lyrics[k-1].time!=null && lyrics[k].time<lyrics[k-1].time)
+      lyrics[k].time = lyrics[k-1].time+0.4;
+  }
+
+  syncIdx=0; renderSyncList();
+  const pct = Math.round(matched/userTok.length*100);
+  const el=$('asrScore');
+  el.textContent = applied+' lignes calées directement, le reste estimé. Correspondance des mots : '+pct+'%.';
+  el.className = 'status'+(pct<35?' warn':'');
+}
+
 function setRec(msg,cls){ const s=$('recStatus'); s.textContent=msg; s.className='status '+(cls||''); }
 
 /* ---------- Résultat : revoir, retélécharger, partager ---------- */
@@ -1041,6 +1429,16 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+/* Affiche les réglages correspondant au type de spectre choisi */
+function toggleSpecOpts(){
+  const t=$('specType').value;
+  const fluid = (t==='flow'||t==='vortex');
+  $('flowOpts').style.display = fluid?'block':'none';
+  $('plainOpts').style.display = (fluid||t==='none')?'none':'block';
+}
+$('specType').onchange = toggleSpecOpts;
+toggleSpecOpts();
 
 applyFormat();
 draw();
