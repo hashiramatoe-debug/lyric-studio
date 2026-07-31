@@ -1,5 +1,5 @@
 /* Lyric Studio — service worker */
-const VERSION = 'lyric-studio-v2';
+const VERSION = 'lyric-studio-v3';
 const CORE = [
   './',
   './index.html',
