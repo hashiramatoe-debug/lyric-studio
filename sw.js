@@ -1,5 +1,11 @@
-/* Lyric Studio — service worker */
-const VERSION = 'lyric-studio-v3';
+/* Lyric Studio — service worker
+ *
+ * Stratégie : « cache d'abord » pour tout ce qui appartient à l'application.
+ * Une fois la première visite faite, plus rien n'a besoin du réseau, sauf
+ * la transcription automatique qui interroge forcément un serveur.
+ */
+const VERSION = 'lyric-studio-v6';
+
 const CORE = [
   './',
   './index.html',
@@ -14,7 +20,7 @@ const CORE = [
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(VERSION)
-      .then(c => c.addAll(CORE))
+      .then(c => Promise.all(CORE.map(u => c.add(u).catch(() => null))))
       .then(() => self.skipWaiting())
   );
 });
@@ -27,31 +33,50 @@ self.addEventListener('activate', e => {
   );
 });
 
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  const url = new URL(req.url);
 
-  // Polices Google : on sert le cache puis on rafraîchit en arrière-plan
-  if (url.hostname.endsWith('googleapis.com') || url.hostname.endsWith('gstatic.com')) {
+  let url;
+  try { url = new URL(req.url); } catch (_) { return; }
+
+  // La transcription a besoin du réseau : jamais de cache, message clair sinon.
+  if (url.pathname.startsWith('/api/')) {
     e.respondWith(
-      caches.open(VERSION).then(async cache => {
-        const hit = await cache.match(req);
-        const net = fetch(req).then(res => { cache.put(req, res.clone()); return res; }).catch(() => hit);
-        return hit || net;
-      })
+      fetch(req).catch(() => new Response(
+        JSON.stringify({ error: "Pas de connexion. La transcription automatique est la seule fonction qui demande internet ; tout le reste de l'application marche hors ligne." }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      ))
     );
     return;
   }
 
-  // Le reste : réseau d'abord, cache en secours (app utilisable hors connexion)
+  // Navigation : la page est servie depuis le cache, même sans réseau.
+  if (req.mode === 'navigate') {
+    e.respondWith(caches.match('./index.html').then(hit => hit || fetch(req)));
+    return;
+  }
+
+  // Le reste, polices comprises : cache d'abord, réseau en secours.
   e.respondWith(
-    fetch(req)
-      .then(res => {
-        const copy = res.clone();
-        caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
+    caches.match(req).then(hit => {
+      if (hit) {
+        fetch(req).then(res => {
+          if (res && res.ok) caches.open(VERSION).then(c => c.put(req, res));
+        }).catch(() => {});
+        return hit;
+      }
+      return fetch(req).then(res => {
+        if (res && (res.ok || res.type === 'opaque')) {
+          const copy = res.clone();
+          caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
+        }
         return res;
-      })
-      .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+      }).catch(() => caches.match('./index.html'));
+    })
   );
 });
