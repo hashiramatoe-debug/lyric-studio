@@ -34,7 +34,7 @@
   body{
     background:var(--ink);
     color:var(--text);
-    font-family:'Inter',system-ui,sans-serif;
+    font-family:'Inter',Roboto,system-ui,sans-serif;
     font-size:15px;
     padding-bottom:40px;
   }
@@ -49,7 +49,7 @@
     background:linear-gradient(90deg,var(--amber),transparent 60%);
   }
   h1{
-    font-family:'Bricolage Grotesque',sans-serif;
+    font-family:'Bricolage Grotesque',Roboto,sans-serif;
     font-weight:800;font-size:22px;margin:0;letter-spacing:-.02em;
   }
   h1 span{color:var(--amber)}
@@ -92,7 +92,7 @@
     padding:14px;margin-bottom:12px;
   }
   .card h2{
-    font-family:'Bricolage Grotesque',sans-serif;font-size:15px;margin:0 0 4px;font-weight:700;
+    font-family:'Bricolage Grotesque',Roboto,sans-serif;font-size:15px;margin:0 0 4px;font-weight:700;
   }
   .hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin:0 0 10px}
 
@@ -149,7 +149,7 @@
     margin-top:12px;background:linear-gradient(160deg,var(--amber),#FF8A3D);
     color:#12151F;border:none;border-radius:var(--r);
     padding:26px 14px;width:100%;font-size:17px;font-weight:800;
-    font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-.01em;
+    font-family:'Bricolage Grotesque',Roboto,sans-serif;letter-spacing:-.01em;
   }
   .tapzone small{display:block;font-weight:500;font-size:12px;opacity:.75;margin-top:4px}
 
@@ -172,6 +172,7 @@
 <header>
   <h1>Lyric<span>Studio</span></h1>
   <p>Spectre audio + paroles synchronisées</p>
+  <span id="offBadge" style="display:none;font-size:11px;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:3px 9px">hors connexion</span>
   <button id="installBtn" style="display:none;margin-left:auto;padding:7px 12px;font-size:12.5px" class="mint">Installer</button>
 </header>
 
@@ -185,6 +186,7 @@
       <span class="time" id="tCur">0:00</span>
       <input type="range" id="seek" min="0" max="100" value="0" step="0.01">
       <span class="time" id="tDur">0:00</span>
+      <span class="time" id="fps" style="min-width:44px;text-align:right">—</span>
     </div>
   </div>
 
@@ -377,11 +379,11 @@
         <label class="field">Turbulence</label>
         <input type="range" id="flowTurb" min="0" max="100" value="55">
         <label class="field">Nombre de rubans</label>
-        <input type="range" id="flowLayers" min="1" max="7" value="4">
+        <input type="range" id="flowLayers" min="1" max="7" value="3">
         <label class="field">Épaisseur</label>
         <input type="range" id="flowThick" min="2" max="60" value="18">
         <label class="field">Halo lumineux</label>
-        <input type="range" id="flowGlow" min="0" max="100" value="55">
+        <input type="range" id="flowGlow" min="0" max="100" value="45">
         <label class="field">Étendue des couleurs</label>
         <input type="range" id="flowSpread" min="20" max="360" value="300">
         <label class="field">Dérive des teintes avec les décibels</label>
@@ -398,13 +400,32 @@
     </div>
     <div class="card">
       <h2>Texte des paroles</h2>
+      <label class="field">Mode d'affichage</label>
+      <select id="textMode">
+        <option value="scroll" selected>Défilement continu (du bas vers le haut)</option>
+        <option value="step">Ligne par ligne</option>
+      </select>
+      <div id="scrollOpts">
+        <label class="field">Douceur du défilement</label>
+        <input type="range" id="scrollEase" min="0" max="100" value="55">
+        <label class="field">Espacement des lignes</label>
+        <input type="range" id="lineGap" min="20" max="140" value="70">
+        <label class="field">Nombre de lignes visibles</label>
+        <input type="range" id="visLines" min="3" max="15" value="7">
+        <label class="field">Halo sonore sur la ligne en cours</label>
+        <input type="range" id="lyricGlow" min="0" max="100" value="65">
+        <label class="field">Pulsation du texte avec la musique</label>
+        <input type="range" id="lyricPulse" min="0" max="100" value="35">
+        <label class="field">Estompage en haut et en bas</label>
+        <input type="range" id="edgeFade" min="0" max="100" value="70">
+      </div>
       <label class="field">Police</label>
       <select id="fontFam">
-        <option value="'Bricolage Grotesque',sans-serif">Bricolage — moderne</option>
-        <option value="Anton,sans-serif">Anton — impact</option>
-        <option value="'Archivo Black',sans-serif">Archivo Black — gras</option>
-        <option value="'Playfair Display',serif">Playfair — élégant</option>
-        <option value="Inter,sans-serif">Inter — neutre</option>
+        <option value="'Bricolage Grotesque',Roboto,sans-serif">Bricolage — moderne</option>
+        <option value="Anton,Roboto,sans-serif">Anton — impact</option>
+        <option value="'Archivo Black',Roboto,sans-serif">Archivo Black — gras</option>
+        <option value="'Playfair Display',Georgia,serif">Playfair — élégant</option>
+        <option value="Inter,Roboto,sans-serif">Inter — neutre</option>
       </select>
       <label class="field">Taille du texte</label>
       <input type="range" id="fontSize" min="20" max="90" value="46">
@@ -449,6 +470,12 @@
           <input type="number" id="expEnd" placeholder="auto" step="1" min="0">
         </div>
       </div>
+      <label class="field">Qualité d'enregistrement</label>
+      <select id="recQuality">
+        <option value="1200000">Légère — recommandée sur téléphone</option>
+        <option value="2200000" selected>Normale</option>
+        <option value="3500000">Élevée — mémoire importante</option>
+      </select>
       <div class="btns">
         <button class="primary" id="recBtn">Démarrer l'enregistrement</button>
         <button class="ghost danger" id="stopBtn" disabled>Arrêter</button>
@@ -493,6 +520,7 @@ let audioCtx=null, analyser=null, srcNode=null, mediaDest=null;
 let freq=null, timeData=null;
 let barsSmooth = [];
 let recorder=null, chunks=[], recording=false, recEnd=0;
+let audioUrl=null, bgUrl=null;
 
 /* ---------- Onglets ---------- */
 document.querySelectorAll('.tab').forEach(t=>{
@@ -524,7 +552,9 @@ function initAudioGraph(){
 $('audioFile').onchange = e=>{
   const f = e.target.files[0]; if(!f) return;
   sourceFile = f;
-  audio.src = URL.createObjectURL(f);
+  if(audioUrl) URL.revokeObjectURL(audioUrl);
+  audioUrl = URL.createObjectURL(f);
+  audio.src = audioUrl;
   audio.load();
   $('audioLabel').classList.add('loaded');
   $('audioLabel').innerHTML = '<strong>'+f.name+'</strong>Appuie pour changer de fichier';
@@ -660,7 +690,12 @@ $('saveProj').onclick = ()=>{
       specType:$('specType').value, specSize:+$('specSize').value, specCount:+$('specCount').value,
       specColor:$('specColor').value, fontFam:$('fontFam').value, fontSize:+$('fontSize').value,
       textPos:+$('textPos').value, textColor:$('textColor').value, activeColor:$('activeColor').value,
-      ctxLines:$('ctxLines').value, anim:$('anim').value, upper:$('upper').value, format:$('format').value
+      ctxLines:$('ctxLines').value, anim:$('anim').value, upper:$('upper').value, format:$('format').value,
+      textMode:$('textMode').value, scrollEase:+$('scrollEase').value, lineGap:+$('lineGap').value,
+      visLines:+$('visLines').value, lyricGlow:+$('lyricGlow').value, lyricPulse:+$('lyricPulse').value,
+      edgeFade:+$('edgeFade').value, flowSpeed:+$('flowSpeed').value, flowTurb:+$('flowTurb').value,
+      flowLayers:+$('flowLayers').value, flowThick:+$('flowThick').value, flowGlow:+$('flowGlow').value,
+      flowSpread:+$('flowSpread').value, flowShift:+$('flowShift').value, flowPos:+$('flowPos').value
     }
   };
   const b = new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
@@ -676,7 +711,7 @@ $('projFile').onchange = e=>{
       $('songTitle').value=d.title||''; $('songArtist').value=d.artist||'';
       $('offset').value=d.offset||0;
       if(d.style) for(const k in d.style){ if($(k)) $(k).value = d.style[k]; }
-      applyFormat();
+      applyFormat(); toggleTextOpts(); toggleSpecOpts(); layoutKey=''; scrollY=null;
       $('lyricsInput').value = lyrics.map(l=>l.text).join('\n');
       syncIdx=0; renderSyncList();
       alert('Projet ouvert. Recharge le fichier audio et le fond.');
@@ -698,7 +733,8 @@ function dl(blob,name){
 /* ---------- Fond ---------- */
 $('bgFile').onchange = e=>{
   const f=e.target.files[0]; if(!f) return;
-  const url=URL.createObjectURL(f);
+  if(bgUrl) URL.revokeObjectURL(bgUrl);
+  const url=URL.createObjectURL(f); bgUrl=url;
   if(f.type.startsWith('video')){
     bgVideo.src=url; bgKind='vid'; bgImage=null;
     bgVideo.play().catch(()=>{});
@@ -734,6 +770,40 @@ palettes.forEach(c=>{
 });
 
 /* ---------- Rendu ---------- */
+/* Flou d'arrière-plan : calculé une seule fois pour une image fixe,
+   et à basse résolution pour une vidéo. Recalculer un flou à chaque
+   image coûte plus cher que tout le reste du rendu réuni. */
+const blurCv = document.createElement('canvas');
+const blurCx = blurCv.getContext('2d');
+let blurKey = '';
+function blurredCache(src, sw, sh, amount, live){
+  const s = 0.35;                       // on floute en petit puis on agrandit
+  const w = Math.max(2,Math.round(sw*s)), h = Math.max(2,Math.round(sh*s));
+  const key = w+'x'+h+'@'+amount;
+  if(!live && key===blurKey) return blurCv;
+  if(blurCv.width!==w||blurCv.height!==h){ blurCv.width=w; blurCv.height=h; }
+  blurCx.filter = 'blur('+(amount*s)+'px)';
+  blurCx.clearRect(0,0,w,h);
+  blurCx.drawImage(src,0,0,w,h);
+  blurCx.filter = 'none';
+  blurKey = live ? '' : key;
+  return blurCv;
+}
+
+/* Compteur d'images : il t'avertit avant l'export si le rendu est trop lourd */
+let fpsAcc=0, fpsN=0, fpsVal=0, fpsLast=performance.now();
+function tickFps(){
+  const now=performance.now();
+  fpsAcc += now-fpsLast; fpsLast=now; fpsN++;
+  if(fpsAcc>500){ fpsVal = fpsN/(fpsAcc/1000); fpsAcc=0; fpsN=0;
+    const el=$('fps');
+    if(el){
+      el.textContent = fpsVal.toFixed(0)+' i/s';
+      el.style.color = fpsVal<18 ? '#FF6B6B' : (fpsVal<26 ? '#FFB84D' : '#5FE3C0');
+    }
+  }
+}
+
 function coverRect(sw,sh,dw,dh,zoom){
   const s=Math.max(dw/sw,dh/sh)*zoom;
   const w=sw*s,h=sh*s;
@@ -750,8 +820,18 @@ function wrap(text,maxW){
   return lines;
 }
 
+let lastIdle = 0;
 function draw(){
   requestAnimationFrame(draw);
+  // Au repos, on redessine 8 fois par seconde au lieu de 60 : cela divise
+  // la consommation et évite la surchauffe qui finissait par tuer l'onglet.
+  const idle = audio.paused && !recording;
+  if(idle){
+    const now = performance.now();
+    if(now - lastIdle < 125) return;
+    lastIdle = now;
+  }
+  tickFps();
   const W=cv.width,H=cv.height;
   const t = audio.currentTime;
 
@@ -761,6 +841,13 @@ function draw(){
   let bass=0;
   if(freq){ for(let i=2;i<24;i++) bass+=freq[i]; bass=bass/22/255; }
 
+  // niveau global lissé : sert au halo du texte et à la dérive des couleurs
+  if(freq){
+    let lv=0, cnt=0;
+    for(let i=2;i<freq.length*0.6;i++){ lv+=freq[i]; cnt++; }
+    levelSmooth = levelSmooth*0.86 + (lv/cnt/255)*0.14;
+  }
+
   // ---- fond ----
   ctx.save();
   ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
@@ -768,13 +855,14 @@ function draw(){
   const pulse = 1 + (+$('bgPulse').value/100)*bass*0.12;
   const kb = 1 + zoomAmt*0.12*(0.5+0.5*Math.sin(t*0.15));
   const blur=+$('bgBlur').value;
-  if(blur) ctx.filter='blur('+blur+'px)';
   if(bgKind==='img' && bgImage){
+    const src = blur ? blurredCache(bgImage, bgImage.width, bgImage.height, blur) : bgImage;
     const r=coverRect(bgImage.width,bgImage.height,W,H,kb*pulse*1.02);
-    ctx.drawImage(bgImage,r[0],r[1],r[2],r[3]);
+    ctx.drawImage(src,r[0],r[1],r[2],r[3]);
   } else if(bgKind==='vid' && bgVideo.readyState>=2){
+    const src = blur ? blurredCache(bgVideo, bgVideo.videoWidth, bgVideo.videoHeight, blur, true) : bgVideo;
     const r=coverRect(bgVideo.videoWidth,bgVideo.videoHeight,W,H,kb*pulse*1.02);
-    ctx.drawImage(bgVideo,r[0],r[1],r[2],r[3]);
+    ctx.drawImage(src,r[0],r[1],r[2],r[3]);
   } else {
     const g=ctx.createLinearGradient(0,0,W,H);
     g.addColorStop(0,'#151A2B'); g.addColorStop(1,'#0A0C12');
@@ -801,7 +889,7 @@ function draw(){
   }
 
   // ---- paroles ----
-  drawLyrics(W,H,t);
+  drawLyrics(W,H,t,levelSmooth);
 
   // progression enregistrement
   if(recording){
@@ -835,7 +923,7 @@ function drawSpectrum(W,H,bass){
 
   ctx.save();
   ctx.fillStyle=color; ctx.strokeStyle=color;
-  ctx.shadowColor=color; ctx.shadowBlur=W*0.012;
+  ctx.shadowBlur=0;
 
   if(type==='flow'||type==='vortex'){
     drawFluid(type,W,H,vals,bass,n);
@@ -895,16 +983,23 @@ function drawSpectrum(W,H,bass){
   ctx.restore();
 }
 /* ---- Onde fluide et tourbillon arc-en-ciel ----
-   Les rubans ondulent selon plusieurs sinusoïdes superposées (l'effet « eau »),
-   leur amplitude suit le spectre, et la teinte parcourt l'arc-en-ciel en
-   dérivant selon le niveau sonore. */
+   Chaque ruban est UN seul tracé peint avec un dégradé arc-en-ciel.
+   Le halo vient de traits superposés de plus en plus larges et transparents :
+   c'est visuellement proche d'un flou, mais des dizaines de fois plus rapide. */
 let flowT = 0, lastFrame = performance.now(), levelSmooth = 0;
 
 function fbm(x, t){
   return Math.sin(x*1.0 + t*1.00)*0.50
        + Math.sin(x*2.3 - t*1.37)*0.28
-       + Math.sin(x*4.1 + t*0.83)*0.14
-       + Math.sin(x*7.7 - t*1.91)*0.08;
+       + Math.sin(x*4.1 + t*0.83)*0.14;
+}
+
+function rainbowGrad(W,H,hueBase,spread,vertical){
+  const g = vertical ? ctx.createLinearGradient(0,0,0,H) : ctx.createLinearGradient(0,0,W,0);
+  for(let s=0;s<=6;s++){
+    g.addColorStop(s/6, 'hsl('+(((hueBase + s/6*spread)%360+360)%360).toFixed(0)+' 95% 62%)');
+  }
+  return g;
 }
 
 function drawFluid(type,W,H,vals,bass,n){
@@ -922,39 +1017,30 @@ function drawFluid(type,W,H,vals,bass,n){
   const shift   = +$('flowShift').value/100;
   const posY    = H*(+$('flowPos').value/100);
 
-  // niveau global lissé : c'est lui qui fait dériver les couleurs
-  let lvl=0; for(let i=0;i<n;i++) lvl+=vals[i];
-  lvl/=n;
-  levelSmooth = levelSmooth*0.88 + lvl*0.12;
+  let lvl=levelSmooth;
   const hueBase = (flowT*14 + levelSmooth*360*shift) % 360;
 
-  const SEG = 96;
+  const SEG = 44;
   ctx.globalCompositeOperation = 'lighter';
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.shadowBlur = glow * Math.min(W,H) * 0.035;
+  ctx.shadowBlur = 0;          // jamais de flou : c'est ce qui tuait la fluidité
 
   for(let l=0; l<layers; l++){
-    const lf = layers>1 ? l/(layers-1) : 0;        // 0 → 1 selon le ruban
-    const depth = 0.45 + 0.55*(1-lf);              // les rubans du fond sont plus fins
+    const lf = layers>1 ? l/(layers-1) : 0;
+    const depth = 0.45 + 0.55*(1-lf);
     const phase = l*1.9;
     const amp = (0.10 + 0.90*depth) * size;
-
-    ctx.lineWidth = Math.max(1.2, Math.min(W,H)*thick*depth);
-    ctx.globalAlpha = 0.30 + 0.55*depth;
 
     const pts=[];
     for(let k=0;k<=SEG;k++){
       const u = k/SEG;
       const bin = Math.min(n-1, Math.floor(u*n));
-      // amplitude issue du spectre, adoucie par ses voisins
       const v = (vals[Math.max(0,bin-1)] + vals[bin]*2 + vals[Math.min(n-1,bin+1)])/4;
       const wobble = fbm(u*5.5 + phase, flowT) * turb;
       const push = (v*0.75 + 0.25) * amp;
-
       if(type==='flow'){
-        const y = posY - (wobble*H*0.16*push*2.2) - v*H*0.30*amp;
-        pts.push([u*W, y]);
+        pts.push([u*W, posY - wobble*H*0.16*push*2.2 - v*H*0.30*amp]);
       } else {
         const R = Math.min(W,H)*(0.16 + 0.10*lf) * (1 + bass*0.10);
         const a = u*Math.PI*2 + flowT*(0.30+0.20*lf) + phase*0.35;
@@ -963,44 +1049,39 @@ function drawFluid(type,W,H,vals,bass,n){
       }
     }
 
-    // tracé segment par segment pour que la teinte évolue le long du ruban
+    // un seul chemin, courbes de Catmull-Rom converties en Bézier
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
     for(let k=0;k<SEG;k++){
-      const u=k/SEG;
-      const hue = (hueBase + u*spread + lf*45) % 360;
-      const light = 55 + 18*Math.min(1, vals[Math.min(n-1,Math.floor(u*n))]*1.6);
-      const col = 'hsl('+hue.toFixed(0)+' 95% '+light.toFixed(0)+'%)';
-      ctx.strokeStyle = col;
-      ctx.shadowColor = col;
-      const p0 = pts[Math.max(0,k-1)], p1 = pts[k], p2 = pts[k+1], p3 = pts[Math.min(SEG,k+2)];
-      ctx.beginPath();
-      ctx.moveTo(p1[0], p1[1]);
-      // Catmull-Rom converti en Bézier : donne la souplesse d'un fluide
+      const p0=pts[Math.max(0,k-1)], p1=pts[k], p2=pts[k+1], p3=pts[Math.min(SEG,k+2)];
       ctx.bezierCurveTo(
         p1[0]+(p2[0]-p0[0])/6, p1[1]+(p2[1]-p0[1])/6,
         p2[0]-(p3[0]-p1[0])/6, p2[1]-(p3[1]-p1[1])/6,
-        p2[0], p2[1]
-      );
-      ctx.stroke();
+        p2[0], p2[1]);
     }
+    if(type==='vortex') ctx.closePath();
 
-    // voile translucide sous le ruban : donne la masse d'eau
+    const grad = rainbowGrad(W,H,hueBase + lf*45, spread, type==='vortex');
+    ctx.strokeStyle = grad;
+    const base = Math.max(1.2, Math.min(W,H)*thick*depth);
+
+    // halo : deux passes larges et transparentes, puis le trait net
+    if(glow>0.02){
+      ctx.globalAlpha = 0.10*glow*depth; ctx.lineWidth = base*5.0; ctx.stroke();
+      ctx.globalAlpha = 0.18*glow*depth; ctx.lineWidth = base*2.4; ctx.stroke();
+    }
+    ctx.globalAlpha = 0.35 + 0.55*depth; ctx.lineWidth = base; ctx.stroke();
+
+    // voile sous le dernier ruban : la masse d'eau
     if(type==='flow' && l===layers-1){
-      ctx.globalAlpha = 0.12 + 0.10*levelSmooth;
-      const g = ctx.createLinearGradient(0,0,W,0);
-      for(let s=0;s<=6;s++){
-        g.addColorStop(s/6, 'hsl('+((hueBase+s/6*spread)%360).toFixed(0)+' 90% 55%)');
-      }
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      for(let k=1;k<=SEG;k++) ctx.lineTo(pts[k][0], pts[k][1]);
+      ctx.globalAlpha = 0.10 + 0.10*levelSmooth;
+      ctx.fillStyle = grad;
       ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
     }
   }
 
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
 }
 
 function roundRect(x,y,w,h,r){
@@ -1019,9 +1100,115 @@ function currentIndex(t){
   return idx;
 }
 
-function drawLyrics(W,H,rawT){
+/* ---- Défilement continu ----
+   Toutes les lignes forment une colonne. La colonne glisse vers le haut pour
+   que la ligne en cours reste à la hauteur choisie. La mise en page est
+   calculée une seule fois et ne change qu'en cas de modification du texte
+   ou des réglages : refaire les mesures à chaque image serait ruineux. */
+let layout = null, layoutKey = '';
+
+function buildLayout(W){
+  const fs = W*(+$('fontSize').value/1000);
+  const fam = $('fontFam').value;
+  const up = $('upper').value==='1';
+  const gap = fs*(+$('lineGap').value/100);
+  const maxW = W*0.86;
+  const key = [W,fs,fam,up,gap,lyrics.length,lyrics.map(l=>l.text).join('|')].join('~');
+  if(layoutKey===key) return layout;
+
+  ctx.font = '700 '+fs+'px '+fam;
+  const items=[]; let y=0;
+  lyrics.forEach((l,i)=>{
+    if(!l.text){ y += gap*0.9; return; }          // les pauses occupent un vide
+    const ls = wrap(up? l.text.toUpperCase() : l.text, maxW);
+    const h = ls.length*fs*1.16;
+    items.push({i, ls, top:y, h, center:y+h/2});
+    y += h + gap;
+  });
+  layout = {items, fs, fam, total:y};
+  layoutKey = key;
+  return layout;
+}
+
+function drawLyricsScroll(W,H,t,level){
+  const L = buildLayout(W);
+  if(!L.items.length) return;
+
+  const idx = currentIndex(t);
+  const anchor = H*(+$('textPos').value/100);
+  const ease = +$('scrollEase').value/100;
+  const glowAmt = +$('lyricGlow').value/100;
+  const pulse = +$('lyricPulse').value/100;
+  const edge = +$('edgeFade').value/100;
+  const vis = +$('visLines').value;
+  const fs = L.fs;
+
+  // position de la colonne, interpolée entre la ligne en cours et la suivante
+  const pos = i => { const it = L.items.find(o=>o.i===i); return it? it.center : null; };
+  let target;
+  if(idx<0){
+    target = L.items[0].center - H*0.35;           // avant le premier vers
+  } else {
+    let a = pos(idx);
+    if(a===null){ const prev=L.items.filter(o=>o.i<=idx).pop(); a = prev? prev.center : 0; }
+    const nxt = L.items.find(o=>o.i>idx);
+    const tA = lyrics[idx].time ?? 0;
+    let tB = null;
+    for(let k=idx+1;k<lyrics.length;k++){ if(lyrics[k].time!=null){ tB=lyrics[k].time; break; } }
+    if(nxt && tB!=null && tB>tA){
+      let p = Math.max(0,Math.min(1,(t-tA)/(tB-tA)));
+      // ease = 0 : la ligne saute d'un coup. ease = 1 : glissement régulier.
+      const snapped = p<0.82 ? Math.pow(p/0.82,2.4)*0.06 : 0.06+(p-0.82)/0.18*0.94;
+      p = snapped*(1-ease) + p*ease;
+      target = a + (nxt.center - a)*p;
+    } else target = a;
+  }
+  // amortissement : évite les à-coups quand un repère est mal placé
+  if(scrollY===null) scrollY = target;
+  scrollY += (target-scrollY)*0.22;
+
+  const half = (vis/2)*fs*1.9;
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font = '700 '+fs+'px '+L.fam;
+  const sh = +$('shadow').value/100;
+  const active = $('activeColor').value, normal = $('textColor').value;
+
+  for(const it of L.items){
+    const y = anchor + (it.center - scrollY);
+    if(y < -it.h || y > H+it.h) continue;           // hors écran : on saute
+    const isCur = it.i===idx;
+    const d = Math.abs(y-anchor)/half;
+    let alpha = isCur ? 1 : Math.max(0, 1 - d*(0.55+edge*0.75));
+    if(alpha<=0.02) continue;
+    if(!isCur) alpha *= 0.62;
+
+    const sc = isCur ? 1 + pulse*level*0.10 : 1;
+    ctx.fillStyle = isCur ? active : normal;
+    ctx.globalAlpha = alpha;
+    if(isCur && glowAmt>0.02){
+      ctx.shadowColor = active;
+      ctx.shadowBlur = W*0.03*glowAmt*(0.35+level*1.3);
+    } else if(sh>0){
+      ctx.shadowColor='rgba(0,0,0,'+(sh*0.9)+')'; ctx.shadowBlur=W*0.014*sh;
+    } else ctx.shadowBlur=0;
+
+    it.ls.forEach((line,k)=>{
+      const ly = y - it.h/2 + fs*0.58 + k*fs*1.16;
+      if(sc!==1){
+        ctx.save(); ctx.translate(W/2,ly); ctx.scale(sc,sc); ctx.fillText(line,0,0); ctx.restore();
+      } else ctx.fillText(line, W/2, ly);
+    });
+  }
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+  ctx.restore();
+}
+let scrollY = null;
+
+function drawLyrics(W,H,rawT,level){
   if(!lyrics.length) return;
   const t = rawT - (+$('offset').value/1000);
+  if($('textMode').value==='scroll'){ drawLyricsScroll(W,H,t,level); return; }
   const idx = currentIndex(t);
   if(idx<0) return;
 
@@ -1100,6 +1287,14 @@ $('recBtn').onclick = async ()=>{
   if(!(end>start)){ setRec('La fin doit être après le début.','err'); return; }
   recStartAt = start; recEnd = end;
 
+  if(fpsVal && fpsVal<20){
+    const ok = confirm("L'aperçu ne tourne qu'à "+fpsVal.toFixed(0)+" images par seconde. "
+      + "La vidéo enregistrée sera saccadée.\n\nPour améliorer : réduis le nombre de rubans, "
+      + "baisse le halo, mets le flou du fond à zéro, ou choisis un format plus petit.\n\n"
+      + "Enregistrer quand même ?");
+    if(!ok) return;
+  }
+
   const vStream = cv.captureStream(30);
   const stream = new MediaStream([...vStream.getVideoTracks(), ...mediaDest.stream.getAudioTracks()]);
   const types=[
@@ -1113,11 +1308,21 @@ $('recBtn').onclick = async ()=>{
   const mime = types.find(t=>MediaRecorder.isTypeSupported(t));
   if(!mime){ setRec("Ton navigateur ne sait pas enregistrer de vidéo. Essaie avec Chrome.",'err'); return; }
 
+  const bps = +$('recQuality').value;
+  const estMo = (end-start)*bps/8/1048576;
+  if(estMo>90){
+    if(!confirm("Cette vidéo occupera environ "+estMo.toFixed(0)+" Mo en mémoire pendant l'enregistrement. "
+      + "Au-delà d'une centaine de mégaoctets, le téléphone risque de fermer l'application.\n\n"
+      + "Choisis une qualité plus légère, ou découpe en deux parties.\n\nContinuer quand même ?")) return;
+  }
+
   chunks=[];
-  recorder = new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond: 5_000_000});
+  recorder = new MediaRecorder(stream,{mimeType:mime, videoBitsPerSecond: bps});
   recorder.ondataavailable = e=>{ if(e.data.size) chunks.push(e.data); };
   recorder.onstop = ()=>{
     const blob = new Blob(chunks,{type:mime});
+    chunks.length = 0; chunks = [];      // libère aussitôt : c'est le double de mémoire évité
+    try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){}
     const ext = mime.includes('mp4')?'mp4':'webm';
     lastName = (($('songTitle').value||'lyric-video').replace(/[^\w\-]+/g,'_'))+'.'+ext;
     lastBlob = blob;
@@ -1158,7 +1363,7 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible' && recording) keepAwake(true);
 });
 /* ---------- Transcription automatique ---------- */
-let asrAbort = false, asrWords = [];
+let asrAbort = false, asrWords = [], asrBusy = false;
 let sourceFile = null;
 
 $('asrMode').onchange = ()=>{
@@ -1198,7 +1403,7 @@ $('asrCancel').onclick = ()=>{ asrAbort=true; setAsr('Annulation en cours…','w
 
 $('asrBtn').onclick = async ()=>{
   if(!sourceFile){ setAsr("Choisis d'abord un fichier audio dans l'onglet 1.",'err'); return; }
-  asrAbort=false; asrWords=[];
+  asrAbort=false; asrWords=[]; asrBusy=true;
   $('asrBtn').disabled=true; $('asrCancel').disabled=false;
   $('asrBar').style.width='0%';
   setAsr('Préparation de l\'audio…','warn');
@@ -1231,6 +1436,8 @@ $('asrBtn').onclick = async ()=>{
     $('asrBar').style.width = ((i+1)/total*100).toFixed(0)+'%';
   }
 
+  pcm = null;   // libère l'audio décodé : plusieurs mégaoctets par minute
+
   if(!asrWords.length){ setAsr("Aucune parole n'a été détectée dans cet audio.",'err'); resetAsrBtns(); return; }
 
   const heard = asrWords.map(w=>w.w).join(' ').replace(/\s+([,.!?])/g,'$1').trim();
@@ -1243,7 +1450,7 @@ $('asrBtn').onclick = async ()=>{
   else { buildLyricsFromAsr(); }
   $('asrResultCard').scrollIntoView({behavior:'smooth',block:'center'});
 };
-function resetAsrBtns(){ $('asrBtn').disabled=false; $('asrCancel').disabled=true; }
+function resetAsrBtns(){ asrBusy=false; $('asrCancel').disabled=true; netState(); }
 function setAsr(m,c){ const s=$('asrStatus'); s.textContent=m; s.className='status '+(c||''); }
 
 $('asrApply').onclick = ()=>{
@@ -1424,11 +1631,35 @@ $('installBtn').onclick = async ()=>{
 };
 window.addEventListener('appinstalled', ()=>{ $('installBtn').style.display='none'; });
 
+/* ---------- État de la connexion ---------- */
+function netState(){
+  const off = !navigator.onLine;
+  $('offBadge').style.display = off ? 'inline-block' : 'none';
+  $('asrBtn').disabled = off || asrBusy;
+  if(off) setAsr("Hors connexion : la transcription automatique est indisponible. Tout le reste fonctionne normalement.",'warn');
+  else if($('asrStatus').textContent.startsWith('Hors connexion')) setAsr('','');
+}
+window.addEventListener('online', netState);
+window.addEventListener('offline', netState);
+netState();
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+function toggleTextOpts(){
+  const s = $('textMode').value==='scroll';
+  $('scrollOpts').style.display = s?'block':'none';
+  $('ctxLines').parentElement && ($('ctxLines').previousElementSibling.style.display = s?'none':'block');
+  $('ctxLines').style.display = s?'none':'block';
+  $('anim').style.display = s?'none':'block';
+  $('anim').previousElementSibling.style.display = s?'none':'block';
+}
+$('textMode').onchange = ()=>{ toggleTextOpts(); scrollY=null; };
+toggleTextOpts();
+$('seek').addEventListener('change', ()=>{ scrollY=null; });
 
 /* Affiche les réglages correspondant au type de spectre choisi */
 function toggleSpecOpts(){
