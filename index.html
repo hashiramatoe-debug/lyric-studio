@@ -395,6 +395,19 @@
       <input type="range" id="specSmooth" min="0" max="95" value="70">
 
       <div id="sphereOpts">
+        <label class="field">Variante</label>
+        <select id="sphVariant">
+          <option value="swirl" selected>Orbe tourbillonnante — bandes torsadées</option>
+          <option value="dense">Orbe dense — surface pleine</option>
+          <option value="mesh">Orbe filaire — réseau de liens</option>
+          <option value="burst">Orbe éclatante — noyau et rayons</option>
+        </select>
+        <label class="field">Torsion des bandes</label>
+        <input type="range" id="sphTwist" min="0" max="100" value="60">
+        <label class="field">Nombre de bandes</label>
+        <input type="range" id="sphBands" min="1" max="12" value="4">
+        <label class="field">Contraste des bandes</label>
+        <input type="range" id="sphContrast" min="0" max="100" value="70">
         <label class="field">Densité de particules</label>
         <input type="range" id="sphN" min="300" max="4000" value="1600" step="100">
         <label class="field">Taille des particules</label>
@@ -726,6 +739,8 @@ $('saveProj').onclick = ()=>{
       textMode:$('textMode').value, scrollEase:+$('scrollEase').value, lineGap:+$('lineGap').value,
       visLines:+$('visLines').value, lyricGlow:+$('lyricGlow').value, lyricPulse:+$('lyricPulse').value,
       edgeFade:+$('edgeFade').value, colorMode:$('colorMode').value,
+      sphVariant:$('sphVariant').value, sphTwist:+$('sphTwist').value,
+      sphBands:+$('sphBands').value, sphContrast:+$('sphContrast').value,
       sphN:+$('sphN').value, sphDot:+$('sphDot').value, sphDeform:+$('sphDeform').value,
       sphWave:+$('sphWave').value, sphSpin:+$('sphSpin').value, sphTilt:+$('sphTilt').value,
       sphRings:+$('sphRings').value, sphGlow:+$('sphGlow').value, sphPos:+$('sphPos').value,
@@ -747,7 +762,7 @@ $('projFile').onchange = e=>{
       $('songTitle').value=d.title||''; $('songArtist').value=d.artist||'';
       $('offset').value=d.offset||0;
       if(d.style) for(const k in d.style){ if($(k)) $(k).value = d.style[k]; }
-      applyFormat(); toggleTextOpts(); toggleSpecOpts(); layoutKey=''; scrollY=null;
+      applyFormat(); toggleTextOpts(); toggleSpecOpts(); toggleSphVariant(); layoutKey=''; scrollY=null;
       $('lyricsInput').value = lyrics.map(l=>l.text).join('\n');
       syncIdx=0; renderSyncList();
       alert('Projet ouvert. Recharge le fichier audio et le fond.');
@@ -1149,6 +1164,7 @@ function drawFluid(type,W,H,vals,bass,n){
    Les points sont peints par paquets de couleur : changer le pinceau est
    bien plus coûteux que dessiner, donc on regroupe. */
 let sphPts = null, sphKey = '', sphAx = 0, sphAy = 0;
+let projX=null, projY=null, projV=null;
 
 function fibSphere(N){
   const key = 'N'+N;
@@ -1183,6 +1199,10 @@ function drawSphere(W,H,vals,bass,n){
   const glow    = +$('sphGlow').value/100;
   const size    = +$('specSize').value/100;
   const posY    = H*(+$('sphPos').value/100);
+  const variant = $('sphVariant').value;
+  const twist    = +$('sphTwist').value/100;
+  const nBands   = +$('sphBands').value;
+  const contrast = +$('sphContrast').value/100;
   const rainbow = $('colorMode').value==='rainbow';
   const spread  = +$('flowSpread').value;
   const shift   = +$('flowShift').value/100;
@@ -1203,6 +1223,9 @@ function drawSphere(W,H,vals,bass,n){
   const cosX=Math.cos(sphAx), sinX=Math.sin(sphAx);
 
   for(let b=0;b<BUCKETS;b++){ bucketX[b].length=0; bucketY[b].length=0; bucketS[b].length=0; }
+  const mesh = variant==='mesh';
+  if(mesh && (!projX || projX.length<N)){ projX=new Float32Array(N); projY=new Float32Array(N); projV=new Uint8Array(N); }
+  if(mesh) projV.fill(0);
 
   for(let i=0;i<N;i++){
     let x=pts[i*3], y=pts[i*3+1], z=pts[i*3+2];
@@ -1213,6 +1236,19 @@ function drawSphere(W,H,vals,bass,n){
     const ripple = Math.sin(y*9 + flowT*2.4) * Math.cos(x*7 - flowT*1.7);
     const rr = 1 + v*deform*0.55 + ripple*wave*0.10 + bass*deform*0.10;
     x*=rr; y*=rr; z*=rr;
+
+    // Torsion : chaque latitude tourne d'un angle différent. C'est ce
+    // cisaillement qui enroule la surface en bandes tourbillonnantes.
+    let ribbon = 1;
+    if(variant==='swirl'){
+      const a = twist*(y*2.6) + flowT*0.75;
+      const ca=Math.cos(a), sa=Math.sin(a);
+      const tx = x*ca + z*sa; z = -x*sa + z*ca; x = tx;
+      // bandes claires et sombres suivant la longitude tordue
+      const lon = Math.atan2(z,x);
+      ribbon = 0.5 + 0.5*Math.sin(lon*nBands + y*3.2 - flowT*1.6);
+      ribbon = 1 - contrast + contrast*Math.pow(ribbon, 1.7);
+    }
 
     // rotation : d'abord autour de l'axe vertical, puis inclinaison
     let x1 = x*cosY + z*sinY, z1 = -x*sinY + z*cosY;
@@ -1230,16 +1266,17 @@ function drawSphere(W,H,vals,bass,n){
     const depth = Math.max(0, Math.min(1, (z2+1)/2));   // 0 au fond, 1 devant
                                                        // borné : la déformation
                                                        // peut pousser z hors sphère
-    const s = Math.max(0.7, dotBase*k*(0.45+depth*0.9)*(W/1280));
+    const s = Math.max(0.5, dotBase*k*(0.45+depth*0.9)*(W/1280)*(0.45+ribbon*0.75));
 
     let b;
     if(rainbow){
-      const hue = ((hueBase + (y*0.5+0.5)*spread + depth*40)%360+360)%360;
+      const hue = ((hueBase + (y*0.5+0.5)*spread + depth*40 + ribbon*55)%360+360)%360;
       b = Math.max(0, Math.min(BUCKETS-1, Math.floor(hue/360*BUCKETS)));
     } else {
-      b = Math.max(0, Math.min(BUCKETS-1, Math.floor((depth*0.55 + Math.min(1,v*1.4)*0.45)*BUCKETS)));
+      b = Math.max(0, Math.min(BUCKETS-1, Math.floor((depth*0.40 + ribbon*0.35 + Math.min(1,v*1.4)*0.25)*BUCKETS)));
     }
     bucketX[b].push(px); bucketY[b].push(py); bucketS[b].push(s);
+    if(mesh){ projX[i]=px; projY[i]=py; projV[i]=1; }
   }
 
   ctx.save();
@@ -1275,6 +1312,54 @@ function drawSphere(W,H,vals,bass,n){
       const s=ss[i];
       ctx.fillRect(xs[i]-s/2, ys[i]-s/2, s, s);
     }
+  }
+
+  // Réseau de liens : dans la spirale de Fibonacci, relier i à i+1 et à
+  // i+racine(N) reconstitue naturellement un maillage triangulé. Tout est
+  // tracé en un seul chemin, sinon le coût exploserait.
+  if(variant==='mesh'){
+    const NM = Math.min(N, 900);      // au-delà, le réseau devient illisible
+    const step = Math.round(Math.sqrt(NM));
+    const maxD = Math.min(W,H)*0.09;
+    ctx.strokeStyle = rainbow ? 'hsl('+hueBase.toFixed(0)+' 90% 62%)' : solid;
+    ctx.lineWidth = Math.max(0.5, W*0.0009);
+    ctx.globalAlpha = 0.30 + 0.35*levelSmooth;
+    ctx.beginPath();
+    for(let i=0;i<NM;i++){
+      if(!projV[i]) continue;
+      for(const j of [i+1, i+step]){
+        if(j>=NM || !projV[j]) continue;
+        const dx=projX[j]-projX[i], dy=projY[j]-projY[i];
+        if(dx*dx+dy*dy > maxD*maxD) continue;
+        ctx.moveTo(projX[i],projY[i]); ctx.lineTo(projX[j],projY[j]);
+      }
+    }
+    ctx.stroke();
+  }
+
+  // Noyau et rayons
+  if(variant==='burst'){
+    const core = ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.55);
+    const hc = rainbow ? 'hsl('+hueBase.toFixed(0)+' 100% 75%)' : solid;
+    core.addColorStop(0,'#FFFFFF'); core.addColorStop(0.25,hc); core.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalAlpha = 0.35+0.5*levelSmooth;
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(cx,cy,R*0.55,0,6.284); ctx.fill();
+
+    const rays = 40;
+    ctx.lineCap='round';
+    ctx.globalAlpha = 0.25+0.5*levelSmooth;
+    ctx.lineWidth = Math.max(0.8, W*0.0012);
+    ctx.beginPath();
+    for(let i=0;i<rays;i++){
+      const a = i/rays*Math.PI*2 + flowT*0.25;
+      const v = vals[Math.floor(i/rays*n)];
+      const r0 = R*1.02, r1 = R*(1.05 + v*0.85*(0.4+size));
+      ctx.moveTo(cx+Math.cos(a)*r0, cy+Math.sin(a)*r0*0.98);
+      ctx.lineTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1*0.98);
+    }
+    ctx.strokeStyle = rainbow ? 'hsl('+((hueBase+40)%360).toFixed(0)+' 95% 70%)' : solid;
+    ctx.stroke();
   }
 
   // anneaux : arcs partiels qui tournent autour de la sphère
@@ -1886,6 +1971,10 @@ $('seek').addEventListener('change', ()=>{ scrollY=null; });
 /* Affiche les réglages correspondant au type de spectre choisi */
 function toggleSpecOpts(){
   const t=$('specType').value, none = t==='none';
+  const variant = $('sphVariant').value;
+  const twist    = +$('sphTwist').value/100;
+  const nBands   = +$('sphBands').value;
+  const contrast = +$('sphContrast').value/100;
   const rainbow = $('colorMode').value==='rainbow';
   $('flowOpts').style.display   = (t==='flow'||t==='vortex')?'block':'none';
   $('sphereOpts').style.display = (t==='sphere')?'block':'none';
@@ -1893,6 +1982,16 @@ function toggleSpecOpts(){
   $('rainbowOpts').style.display = (!none && rainbow)?'block':'none';
 }
 $('colorMode').onchange = toggleSpecOpts;
+
+function toggleSphVariant(){
+  const sw = $('sphVariant').value==='swirl';
+  [ $('sphTwist'), $('sphBands'), $('sphContrast') ].forEach(el=>{
+    el.style.display = sw?'block':'none';
+    el.previousElementSibling.style.display = sw?'block':'none';
+  });
+}
+$('sphVariant').onchange = toggleSphVariant;
+toggleSphVariant();
 $('specType').onchange = toggleSpecOpts;
 toggleSpecOpts();
 
