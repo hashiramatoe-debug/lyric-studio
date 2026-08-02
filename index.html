@@ -357,8 +357,9 @@
       <h2>Spectre audio</h2>
       <label class="field">Type de spectre</label>
       <select id="specType">
-        <option value="flow" selected>Onde fluide arc-en-ciel</option>
-        <option value="vortex">Tourbillon arc-en-ciel</option>
+        <option value="sphere" selected>Sphère de particules</option>
+        <option value="flow">Onde fluide</option>
+        <option value="vortex">Tourbillon</option>
         <option value="bars">Barres en bas</option>
         <option value="mirror">Barres miroir (centre)</option>
         <option value="circle">Cercle autour du centre</option>
@@ -366,12 +367,53 @@
         <option value="dots">Points suspendus</option>
         <option value="none">Aucun</option>
       </select>
-      <label class="field">Hauteur du spectre</label>
+
+      <label class="field">Couleurs</label>
+      <select id="colorMode">
+        <option value="rainbow">Arc-en-ciel</option>
+        <option value="single" selected>Une seule couleur</option>
+      </select>
+
+      <div id="singleOpts">
+        <label class="field">Couleur du spectre</label>
+        <input type="color" id="specColor" value="#4D8CFF">
+        <div class="swatches" id="swatches"></div>
+      </div>
+
+      <div id="rainbowOpts">
+        <label class="field">Étendue des couleurs</label>
+        <input type="range" id="flowSpread" min="20" max="360" value="300">
+        <label class="field">Dérive des teintes avec les décibels</label>
+        <input type="range" id="flowShift" min="0" max="100" value="60">
+      </div>
+
+      <label class="field">Taille du spectre</label>
       <input type="range" id="specSize" min="5" max="100" value="45">
-      <label class="field">Nombre de barres</label>
+      <label class="field">Finesse d'analyse</label>
       <input type="range" id="specCount" min="16" max="128" value="64">
       <label class="field">Réactivité</label>
       <input type="range" id="specSmooth" min="0" max="95" value="70">
+
+      <div id="sphereOpts">
+        <label class="field">Densité de particules</label>
+        <input type="range" id="sphN" min="300" max="4000" value="1600" step="100">
+        <label class="field">Taille des particules</label>
+        <input type="range" id="sphDot" min="1" max="10" value="3">
+        <label class="field">Déformation par le son</label>
+        <input type="range" id="sphDeform" min="0" max="100" value="55">
+        <label class="field">Ondulation de surface</label>
+        <input type="range" id="sphWave" min="0" max="100" value="45">
+        <label class="field">Vitesse de rotation</label>
+        <input type="range" id="sphSpin" min="0" max="100" value="30">
+        <label class="field">Inclinaison</label>
+        <input type="range" id="sphTilt" min="-60" max="60" value="18">
+        <label class="field">Anneaux lumineux</label>
+        <input type="range" id="sphRings" min="0" max="4" value="2">
+        <label class="field">Halo</label>
+        <input type="range" id="sphGlow" min="0" max="100" value="60">
+        <label class="field">Position verticale</label>
+        <input type="range" id="sphPos" min="10" max="90" value="50">
+      </div>
 
       <div id="flowOpts">
         <label class="field">Vitesse du courant</label>
@@ -384,18 +426,8 @@
         <input type="range" id="flowThick" min="2" max="60" value="18">
         <label class="field">Halo lumineux</label>
         <input type="range" id="flowGlow" min="0" max="100" value="45">
-        <label class="field">Étendue des couleurs</label>
-        <input type="range" id="flowSpread" min="20" max="360" value="300">
-        <label class="field">Dérive des teintes avec les décibels</label>
-        <input type="range" id="flowShift" min="0" max="100" value="60">
         <label class="field">Position verticale du courant</label>
         <input type="range" id="flowPos" min="10" max="90" value="72">
-      </div>
-
-      <div id="plainOpts">
-        <label class="field">Couleur du spectre</label>
-        <input type="color" id="specColor" value="#FFB84D">
-        <div class="swatches" id="swatches"></div>
       </div>
     </div>
     <div class="card">
@@ -693,7 +725,11 @@ $('saveProj').onclick = ()=>{
       ctxLines:$('ctxLines').value, anim:$('anim').value, upper:$('upper').value, format:$('format').value,
       textMode:$('textMode').value, scrollEase:+$('scrollEase').value, lineGap:+$('lineGap').value,
       visLines:+$('visLines').value, lyricGlow:+$('lyricGlow').value, lyricPulse:+$('lyricPulse').value,
-      edgeFade:+$('edgeFade').value, flowSpeed:+$('flowSpeed').value, flowTurb:+$('flowTurb').value,
+      edgeFade:+$('edgeFade').value, colorMode:$('colorMode').value,
+      sphN:+$('sphN').value, sphDot:+$('sphDot').value, sphDeform:+$('sphDeform').value,
+      sphWave:+$('sphWave').value, sphSpin:+$('sphSpin').value, sphTilt:+$('sphTilt').value,
+      sphRings:+$('sphRings').value, sphGlow:+$('sphGlow').value, sphPos:+$('sphPos').value,
+      flowSpeed:+$('flowSpeed').value, flowTurb:+$('flowTurb').value,
       flowLayers:+$('flowLayers').value, flowThick:+$('flowThick').value, flowGlow:+$('flowGlow').value,
       flowSpread:+$('flowSpread').value, flowShift:+$('flowShift').value, flowPos:+$('flowPos').value
     }
@@ -760,7 +796,7 @@ function applyFormat(){
 $('format').onchange=applyFormat;
 
 /* ---------- Palettes ---------- */
-const palettes=['#FFB84D','#5FE3C0','#FF6B9D','#7C6CFF','#FFFFFF','#FF4D4D','#4DA6FF','#C2FF4D'];
+const palettes=['#4D8CFF','#7C6CFF','#00E0FF','#5FE3C0','#FFB84D','#FF6B9D','#FF4D4D','#C2FF4D','#FFFFFF'];
 palettes.forEach(c=>{
   const d=document.createElement('div');
   d.className='sw'; d.style.background=c;
@@ -902,6 +938,10 @@ function draw(){
 function drawSpectrum(W,H,bass){
   const type=$('specType').value;
   if(type==='none'||!freq) return;
+  if(type!=='flow' && type!=='vortex' && type!=='sphere'){
+    const now=performance.now();
+    flowT += Math.min(0.05,(now-lastFrame)/1000)*0.6; lastFrame=now;
+  }
   const color=$('specColor').value;
   const size=(+$('specSize').value/100);
   const n=+$('specCount').value;
@@ -922,9 +962,15 @@ function drawSpectrum(W,H,bass){
   }
 
   ctx.save();
-  ctx.fillStyle=color; ctx.strokeStyle=color;
+  const paint = specPaint(W,H,type==='circle');
+  ctx.fillStyle=paint; ctx.strokeStyle=paint;
   ctx.shadowBlur=0;
 
+  if(type==='sphere'){
+    drawSphere(W,H,vals,bass,n);
+    ctx.restore();
+    return;
+  }
   if(type==='flow'||type==='vortex'){
     drawFluid(type,W,H,vals,bass,n);
     ctx.restore();
@@ -994,6 +1040,16 @@ function fbm(x, t){
        + Math.sin(x*4.1 + t*0.83)*0.14;
 }
 
+/* Renvoie soit la couleur unique choisie, soit un dégradé arc-en-ciel :
+   tous les styles de spectre passent par ici. */
+function specPaint(W,H,vertical){
+  if($('colorMode').value!=='rainbow') return $('specColor').value;
+  const spread = +$('flowSpread').value;
+  const shift  = +$('flowShift').value/100;
+  const hueBase = (flowT*12 + levelSmooth*360*shift) % 360;
+  return rainbowGrad(W,H,hueBase,spread,vertical);
+}
+
 function rainbowGrad(W,H,hueBase,spread,vertical){
   const g = vertical ? ctx.createLinearGradient(0,0,0,H) : ctx.createLinearGradient(0,0,W,0);
   for(let s=0;s<=6;s++){
@@ -1061,7 +1117,9 @@ function drawFluid(type,W,H,vals,bass,n){
     }
     if(type==='vortex') ctx.closePath();
 
-    const grad = rainbowGrad(W,H,hueBase + lf*45, spread, type==='vortex');
+    const grad = $('colorMode').value==='rainbow'
+      ? rainbowGrad(W,H,hueBase + lf*45, spread, type==='vortex')
+      : $('specColor').value;
     ctx.strokeStyle = grad;
     const base = Math.max(1.2, Math.min(W,H)*thick*depth);
 
@@ -1082,6 +1140,170 @@ function drawFluid(type,W,H,vals,bass,n){
 
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
+}
+
+/* ---- Sphère de particules ----
+   Les points sont répartis sur la sphère par la spirale de Fibonacci, seule
+   méthode qui donne un semis régulier sans amas aux pôles. Ils sont ensuite
+   tournés, déplacés par le son, puis projetés en perspective.
+   Les points sont peints par paquets de couleur : changer le pinceau est
+   bien plus coûteux que dessiner, donc on regroupe. */
+let sphPts = null, sphKey = '', sphAx = 0, sphAy = 0;
+
+function fibSphere(N){
+  const key = 'N'+N;
+  if(sphKey===key) return sphPts;
+  const p = new Float32Array(N*3);
+  const golden = Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<N;i++){
+    const y = 1 - (i/(N-1))*2;
+    const r = Math.sqrt(Math.max(0,1-y*y));
+    const th = golden*i;
+    p[i*3] = Math.cos(th)*r; p[i*3+1] = y; p[i*3+2] = Math.sin(th)*r;
+  }
+  sphPts = p; sphKey = key;
+  return p;
+}
+
+const BUCKETS = 20;
+const bucketX = [], bucketY = [], bucketS = [];
+for(let i=0;i<BUCKETS;i++){ bucketX.push([]); bucketY.push([]); bucketS.push([]); }
+
+function drawSphere(W,H,vals,bass,n){
+  const now = performance.now();
+  const dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+
+  const N       = +$('sphN').value;
+  const dotBase = +$('sphDot').value;
+  const deform  = +$('sphDeform').value/100;
+  const wave    = +$('sphWave').value/100;
+  const spin    = +$('sphSpin').value/100;
+  const tilt    = +$('sphTilt').value*Math.PI/180;
+  const rings   = +$('sphRings').value;
+  const glow    = +$('sphGlow').value/100;
+  const size    = +$('specSize').value/100;
+  const posY    = H*(+$('sphPos').value/100);
+  const rainbow = $('colorMode').value==='rainbow';
+  const spread  = +$('flowSpread').value;
+  const shift   = +$('flowShift').value/100;
+
+  flowT += dt*(0.3+spin*2.0);
+  sphAy += dt*(0.15+spin*1.1);
+  sphAx  = tilt;
+
+  const R = Math.min(W,H)*0.30*(0.5+size);
+  const cx = W/2, cy = posY;
+  const cam = R*3.4;
+
+  const pts = fibSphere(N);
+  const hueBase = (flowT*12 + levelSmooth*360*shift) % 360;
+  const solid = $('specColor').value;
+
+  const cosY=Math.cos(sphAy), sinY=Math.sin(sphAy);
+  const cosX=Math.cos(sphAx), sinX=Math.sin(sphAx);
+
+  for(let b=0;b<BUCKETS;b++){ bucketX[b].length=0; bucketY[b].length=0; bucketS[b].length=0; }
+
+  for(let i=0;i<N;i++){
+    let x=pts[i*3], y=pts[i*3+1], z=pts[i*3+2];
+
+    // déplacement radial : le son gonfle la surface, l'ondulation la fait respirer
+    const band = Math.min(n-1, Math.floor((y*0.5+0.5)*n));
+    const v = vals[band];
+    const ripple = Math.sin(y*9 + flowT*2.4) * Math.cos(x*7 - flowT*1.7);
+    const rr = 1 + v*deform*0.55 + ripple*wave*0.10 + bass*deform*0.10;
+    x*=rr; y*=rr; z*=rr;
+
+    // rotation : d'abord autour de l'axe vertical, puis inclinaison
+    let x1 = x*cosY + z*sinY, z1 = -x*sinY + z*cosY;
+    let y2 = y*cosX - z1*sinX, z2 = y*sinX + z1*cosX;
+
+    // projection en perspective
+    const zz = z2*R + cam;
+    if(zz<=1) continue;
+    const k = cam/zz;
+    const px = cx + x1*R*k;
+    const py = cy + y2*R*k;
+    if(px<-8||px>W+8||py<-8||py>H+8) continue;
+
+    // la profondeur commande la taille et l'éclat : c'est ce qui donne le volume
+    const depth = Math.max(0, Math.min(1, (z2+1)/2));   // 0 au fond, 1 devant
+                                                       // borné : la déformation
+                                                       // peut pousser z hors sphère
+    const s = Math.max(0.7, dotBase*k*(0.45+depth*0.9)*(W/1280));
+
+    let b;
+    if(rainbow){
+      const hue = ((hueBase + (y*0.5+0.5)*spread + depth*40)%360+360)%360;
+      b = Math.max(0, Math.min(BUCKETS-1, Math.floor(hue/360*BUCKETS)));
+    } else {
+      b = Math.max(0, Math.min(BUCKETS-1, Math.floor((depth*0.55 + Math.min(1,v*1.4)*0.45)*BUCKETS)));
+    }
+    bucketX[b].push(px); bucketY[b].push(py); bucketS[b].push(s);
+  }
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.shadowBlur = 0;
+
+  // halo général : un seul dégradé radial, pas un flou par point
+  if(glow>0.02){
+    const g = ctx.createRadialGradient(cx,cy,R*0.35,cx,cy,R*1.55);
+    const hc = rainbow ? 'hsl('+hueBase.toFixed(0)+' 95% 60%)' : solid;
+    g.addColorStop(0, hc); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalAlpha = 0.16*glow*(0.5+levelSmooth*1.2);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.55,0,6.284); ctx.fill();
+  }
+
+  const rgb = hexRgb(solid);
+  for(let b=0;b<BUCKETS;b++){
+    const xs=bucketX[b]; if(!xs.length) continue;
+    if(rainbow){
+      ctx.fillStyle = 'hsl('+((b+0.5)/BUCKETS*360).toFixed(0)+' 95% 62%)';
+      ctx.globalAlpha = 0.85;
+    } else {
+      // en unicolore, les paquets deviennent des nuances de la même teinte
+      const f = (b+0.5)/BUCKETS;
+      ctx.fillStyle = 'rgb('+Math.min(255,rgb[0]*(0.35+f*1.1)|0)+','
+                            +Math.min(255,rgb[1]*(0.35+f*1.1)|0)+','
+                            +Math.min(255,rgb[2]*(0.35+f*1.1)|0)+')';
+      ctx.globalAlpha = 0.35+f*0.6;
+    }
+    const ys=bucketY[b], ss=bucketS[b];
+    for(let i=0;i<xs.length;i++){
+      const s=ss[i];
+      ctx.fillRect(xs[i]-s/2, ys[i]-s/2, s, s);
+    }
+  }
+
+  // anneaux : arcs partiels qui tournent autour de la sphère
+  if(rings>0){
+    ctx.lineCap='round';
+    for(let r=0;r<rings;r++){
+      const rf = r/Math.max(1,rings);
+      const rad = R*(1.12 + rf*0.30) * (1 + bass*0.05);
+      const rot = flowT*(0.5 + rf*0.9) * (r%2? -1: 1);
+      const span = 0.7 + 0.5*Math.sin(flowT*0.7 + r);
+      ctx.strokeStyle = rainbow
+        ? 'hsl('+(((hueBase + rf*spread)%360+360)%360).toFixed(0)+' 95% 65%)'
+        : solid;
+      ctx.lineWidth = Math.max(1, W*0.0018*(1+levelSmooth*2));
+      ctx.globalAlpha = 0.30+0.45*levelSmooth;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rad, rad*(0.28+0.5*Math.abs(Math.cos(tilt))), rot, 0, span*Math.PI*2);
+      ctx.stroke();
+    }
+  }
+
+  ctx.globalCompositeOperation='source-over';
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function hexRgb(h){
+  const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+  return m? [parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)] : [255,255,255];
 }
 
 function roundRect(x,y,w,h,r){
@@ -1663,11 +1885,14 @@ $('seek').addEventListener('change', ()=>{ scrollY=null; });
 
 /* Affiche les réglages correspondant au type de spectre choisi */
 function toggleSpecOpts(){
-  const t=$('specType').value;
-  const fluid = (t==='flow'||t==='vortex');
-  $('flowOpts').style.display = fluid?'block':'none';
-  $('plainOpts').style.display = (fluid||t==='none')?'none':'block';
+  const t=$('specType').value, none = t==='none';
+  const rainbow = $('colorMode').value==='rainbow';
+  $('flowOpts').style.display   = (t==='flow'||t==='vortex')?'block':'none';
+  $('sphereOpts').style.display = (t==='sphere')?'block':'none';
+  $('singleOpts').style.display  = (!none && !rainbow)?'block':'none';
+  $('rainbowOpts').style.display = (!none && rainbow)?'block':'none';
 }
+$('colorMode').onchange = toggleSpecOpts;
 $('specType').onchange = toggleSpecOpts;
 toggleSpecOpts();
 
