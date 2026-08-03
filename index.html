@@ -351,8 +351,19 @@
     </div>
   </section>
 
-  <!-- 5 STYLE -->
+  <!-- 6 STYLE -->
   <section class="pane" id="p-style">
+    <div class="card">
+      <h2>Préréglages</h2>
+      <p class="hint">Enregistre l'ensemble de tes réglages visuels sous un nom, par exemple celui d'un album, et rappelle-les d'un geste sur le morceau suivant.</p>
+      <select id="presetList"><option value="">— aucun préréglage enregistré —</option></select>
+      <div class="btns">
+        <button class="primary" id="presetLoad">Appliquer</button>
+        <button class="ghost" id="presetSave">Enregistrer sous…</button>
+        <button class="ghost danger" id="presetDel">Supprimer</button>
+      </div>
+      <div class="status" id="presetStatus"></div>
+    </div>
     <div class="card">
       <h2>Spectre audio</h2>
       <label class="field">Type de spectre</label>
@@ -522,9 +533,11 @@
         <option value="3500000">Élevée — mémoire importante</option>
       </select>
       <div class="btns">
-        <button class="primary" id="recBtn">Démarrer l'enregistrement</button>
+        <button class="mint" id="fastBtn">Export rapide</button>
+        <button class="primary" id="recBtn">Enregistrement classique</button>
         <button class="ghost danger" id="stopBtn" disabled>Arrêter</button>
       </div>
+      <p class="hint" id="fastNote" style="margin-top:8px"></p>
       <div class="bar"><i id="recBar"></i></div>
       <div class="status" id="recStatus"></div>
     </div>
@@ -874,6 +887,7 @@ function wrap(text,maxW){
 let lastIdle = 0;
 function draw(){
   requestAnimationFrame(draw);
+  if(offlineMode) return;          // pendant l'export rapide, on pilote nous-mêmes
   // Au repos, on redessine 8 fois par seconde au lieu de 60 : cela divise
   // la consommation et évite la surchauffe qui finissait par tuer l'onglet.
   const idle = audio.paused && !recording;
@@ -883,10 +897,22 @@ function draw(){
     lastIdle = now;
   }
   tickFps();
-  const W=cv.width,H=cv.height;
-  const t = audio.currentTime;
-
   if(analyser){ analyser.getByteFrequencyData(freq); analyser.getByteTimeDomainData(timeData); }
+  renderScene(audio.currentTime);
+}
+
+/* Le rendu d'une image, indépendant de la source du temps et du spectre :
+   c'est ce qui permet de le réutiliser tel quel pour l'export rapide. */
+let offlineMode = false, offlineDt = 0;
+function frameDt(){
+  if(offlineMode) return offlineDt;
+  const now = performance.now();
+  const dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+  return dt;
+}
+
+function renderScene(t){
+  const W=cv.width,H=cv.height;
 
   // énergie basses (pour la pulsation)
   let bass=0;
@@ -943,7 +969,7 @@ function draw(){
   drawLyrics(W,H,t,levelSmooth);
 
   // progression enregistrement
-  if(recording){
+  if(recording && !offlineMode){
     const p=Math.min(1,(t-recStartAt)/(recEnd-recStartAt));
     $('recBar').style.width=(p*100).toFixed(1)+'%';
     if(t>=recEnd) stopRec();
@@ -953,10 +979,7 @@ function draw(){
 function drawSpectrum(W,H,bass){
   const type=$('specType').value;
   if(type==='none'||!freq) return;
-  if(type!=='flow' && type!=='vortex' && type!=='sphere'){
-    const now=performance.now();
-    flowT += Math.min(0.05,(now-lastFrame)/1000)*0.6; lastFrame=now;
-  }
+  if(type!=='flow' && type!=='vortex' && type!=='sphere') flowT += frameDt()*0.6;
   const color=$('specColor').value;
   const size=(+$('specSize').value/100);
   const n=+$('specCount').value;
@@ -1074,8 +1097,7 @@ function rainbowGrad(W,H,hueBase,spread,vertical){
 }
 
 function drawFluid(type,W,H,vals,bass,n){
-  const now = performance.now();
-  const dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+  const dt = frameDt();
   const speed = +$('flowSpeed').value/100;
   flowT += dt*(0.25+speed*2.2);
 
@@ -1186,8 +1208,7 @@ const bucketX = [], bucketY = [], bucketS = [];
 for(let i=0;i<BUCKETS;i++){ bucketX.push([]); bucketY.push([]); bucketS.push([]); }
 
 function drawSphere(W,H,vals,bass,n){
-  const now = performance.now();
-  const dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+  const dt = frameDt();
 
   const N       = +$('sphN').value;
   const dotBase = +$('sphDot').value;
@@ -1603,7 +1624,10 @@ $('recBtn').onclick = async ()=>{
   }
 
   const vStream = cv.captureStream(30);
-  const stream = new MediaStream([...vStream.getVideoTracks(), ...mediaDest.stream.getAudioTracks()]);
+  const srcTrack = mediaDest.stream.getAudioTracks()[0];
+  if(!srcTrack){ setRec("Piste audio introuvable. Recharge la page.",'err'); return; }
+  const audioTrack = srcTrack.clone();   // un clone s'arrête sans tuer l'original
+  const stream = new MediaStream([...vStream.getVideoTracks(), audioTrack]);
   const types=[
     'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
     'video/mp4;codecs=h264,aac',
@@ -1629,7 +1653,8 @@ $('recBtn').onclick = async ()=>{
   recorder.onstop = ()=>{
     const blob = new Blob(chunks,{type:mime});
     chunks.length = 0; chunks = [];      // libère aussitôt : c'est le double de mémoire évité
-    try{ stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    // on n'arrête que les pistes jetables : le clone audio et la capture vidéo
+    try{ audioTrack.stop(); vStream.getTracks().forEach(t=>t.stop()); }catch(e){}
     const ext = mime.includes('mp4')?'mp4':'webm';
     lastName = (($('songTitle').value||'lyric-video').replace(/[^\w\-]+/g,'_'))+'.'+ext;
     lastBlob = blob;
@@ -1648,7 +1673,16 @@ $('recBtn').onclick = async ()=>{
   await keepAwake(true);
   setRec("Enregistrement en cours… garde l'application au premier plan.",'warn');
 };
-$('stopBtn').onclick = stopRec;
+$('fastBtn').onclick = async ()=>{
+  if(!audio.src){ alert('Choisis un fichier audio (onglet 1).'); return; }
+  const start=Math.max(0,+$('expStart').value||0);
+  const end=$('expEnd').value? Math.min(audio.duration,+$('expEnd').value) : audio.duration;
+  if(!(end>start)){ setRec('La fin doit être après le début.','err'); return; }
+  audio.pause();
+  await fastExport(start,end,+$('recQuality').value);
+};
+
+$('stopBtn').onclick = ()=>{ if(offlineMode){ fastAbort=true; } else stopRec(); };
 function stopRec(){
   if(!recording) return;
   recording=false;
@@ -1872,6 +1906,240 @@ function applyAlignment(){
 
 function setRec(msg,cls){ const s=$('recStatus'); s.textContent=msg; s.className='status '+(cls||''); }
 
+
+/* ================= EXPORT RAPIDE =================
+   Au lieu de filmer l'écran en temps réel, on calcule chaque image le plus
+   vite possible et on l'encode directement. Le spectre est obtenu par une
+   transformée de Fourier maison appliquée au son décodé, ce qui reproduit
+   ce que l'analyseur donnerait en lecture. Nécessite WebCodecs. */
+
+const FAST_OK = typeof window.VideoEncoder==='function' && typeof window.AudioEncoder==='function';
+
+/* --- transformée de Fourier rapide, base 2 --- */
+function fftRadix2(re, im){
+  const n = re.length;
+  for(let i=1,j=0;i<n;i++){
+    let bit=n>>1;
+    for(;j&bit;bit>>=1) j^=bit;
+    j^=bit;
+    if(i<j){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; }
+  }
+  for(let len=2;len<=n;len<<=1){
+    const ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+    for(let i=0;i<n;i+=len){
+      let cr=1, ci=0;
+      for(let k=0;k<len/2;k++){
+        const ur=re[i+k], ui=im[i+k];
+        const vr=re[i+k+len/2]*cr - im[i+k+len/2]*ci;
+        const vi=re[i+k+len/2]*ci + im[i+k+len/2]*cr;
+        re[i+k]=ur+vr; im[i+k]=ui+vi;
+        re[i+k+len/2]=ur-vr; im[i+k+len/2]=ui-vi;
+        const ncr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=ncr;
+      }
+    }
+  }
+}
+
+const FFT_N = 2048;
+const hann = new Float32Array(FFT_N);
+for(let i=0;i<FFT_N;i++) hann[i]=0.5-0.5*Math.cos(2*Math.PI*i/(FFT_N-1));
+
+/* Reproduit getByteFrequencyData : magnitude en décibels ramenée sur 0-255 */
+function fillFreqFromPcm(pcm, startSample, out, prev, smooth){
+  const re=new Float32Array(FFT_N), im=new Float32Array(FFT_N);
+  for(let i=0;i<FFT_N;i++){
+    const s=startSample+i;
+    re[i]=(s>=0&&s<pcm.length? pcm[s]:0)*hann[i];
+  }
+  fftRadix2(re,im);
+  const bins=out.length;
+  for(let i=0;i<bins;i++){
+    const mag=Math.sqrt(re[i]*re[i]+im[i]*im[i])/FFT_N*2;
+    let db=20*Math.log10(mag+1e-10);
+    let v=(db+100)/70;                       // -100 dB .. -30 dB
+    v=Math.max(0,Math.min(1,v));
+    prev[i]=prev[i]*smooth+v*(1-smooth);
+    out[i]=Math.round(prev[i]*255);
+  }
+}
+
+/* --- muxeur WebM (validé hors ligne sur des flux VP8 et Opus réels) --- */
+function vintLen(n){ let l=1; while(n>=Math.pow(2,7*l)-1&&l<8) l++; return l; }
+function vintB(n){ const l=vintLen(n),b=new Uint8Array(l);
+  for(let i=l-1;i>=0;i--){ b[i]=n&0xff; n=Math.floor(n/256); } b[0]|=(1<<(8-l)); return b; }
+function uintB(n){ if(n===0) return new Uint8Array([0]); const b=[];
+  while(n>0){ b.unshift(n&0xff); n=Math.floor(n/256); } return new Uint8Array(b); }
+function f64B(n){ const b=new Uint8Array(8); new DataView(b.buffer).setFloat64(0,n); return b; }
+function strB(s){ return new TextEncoder().encode(s); }
+function catB(a){ let L=0; for(const x of a) L+=x.length;
+  const o=new Uint8Array(L); let p=0; for(const x of a){ o.set(x,p); p+=x.length; } return o; }
+function elB(id,p){ return catB([new Uint8Array(id), vintB(p.length), p]); }
+const EID={EBML:[0x1A,0x45,0xDF,0xA3],EV:[0x42,0x86],ERV:[0x42,0xF7],EML:[0x42,0xF2],ESL:[0x42,0xF3],
+ DT:[0x42,0x82],DTV:[0x42,0x87],DTRV:[0x42,0x85],Seg:[0x18,0x53,0x80,0x67],Info:[0x15,0x49,0xA9,0x66],
+ TCS:[0x2A,0xD7,0xB1],MA:[0x4D,0x80],WA:[0x57,0x41],Dur:[0x44,0x89],Trks:[0x16,0x54,0xAE,0x6B],
+ TE:[0xAE],TN:[0xD7],TU:[0x73,0xC5],TT:[0x83],CID:[0x86],CP:[0x63,0xA2],Vid:[0xE0],PW:[0xB0],PH:[0xBA],
+ Aud:[0xE1],SF:[0xB5],CH:[0x9F],Clu:[0x1F,0x43,0xB6,0x75],TC:[0xE7],SB:[0xA3]};
+function sBlock(track,rel,key,data){
+  const tn=vintB(track), head=new Uint8Array(tn.length+3);
+  head.set(tn,0); new DataView(head.buffer).setInt16(tn.length,rel);
+  head[tn.length+2]=key?0x80:0x00;
+  return elB(EID.SB, catB([head,data]));
+}
+function buildWebM(o){
+  const header=elB(EID.EBML, catB([elB(EID.EV,uintB(1)),elB(EID.ERV,uintB(1)),
+    elB(EID.EML,uintB(4)),elB(EID.ESL,uintB(8)),elB(EID.DT,strB('webm')),
+    elB(EID.DTV,uintB(2)),elB(EID.DTRV,uintB(2))]));
+  let last=0;
+  for(const f of o.frames) last=Math.max(last,f.ts);
+  for(const a of o.audio) last=Math.max(last,a.ts);
+  const info=elB(EID.Info, catB([elB(EID.TCS,uintB(1000000)),
+    elB(EID.MA,strB('LyricStudio')),elB(EID.WA,strB('LyricStudio')),
+    elB(EID.Dur,f64B(last/1000+40))]));
+  const vT=elB(EID.TE, catB([elB(EID.TN,uintB(1)),elB(EID.TU,uintB(1)),elB(EID.TT,uintB(1)),
+    elB(EID.CID,strB(o.vcodec)), elB(EID.Vid, catB([elB(EID.PW,uintB(o.width)),elB(EID.PH,uintB(o.height))]))]));
+  const list=[vT];
+  if(o.audio.length){
+    const p=[elB(EID.TN,uintB(2)),elB(EID.TU,uintB(2)),elB(EID.TT,uintB(2)),
+      elB(EID.CID,strB('A_OPUS')),
+      elB(EID.Aud, catB([elB(EID.SF,f64B(o.sampleRate)),elB(EID.CH,uintB(o.channels))]))];
+    if(o.opusHead) p.push(elB(EID.CP,o.opusHead));
+    list.push(elB(EID.TE,catB(p)));
+  }
+  const tracks=elB(EID.Trks,catB(list));
+  const all=[];
+  for(const f of o.frames) all.push({t:f.ts,tr:1,key:f.key,data:f.data});
+  for(const a of o.audio)  all.push({t:a.ts,tr:2,key:true,data:a.data});
+  all.sort((x,y)=> x.t-y.t || x.tr-y.tr);
+  const clusters=[]; let cur=null, base=0;
+  const flush=()=>{ if(cur&&cur.length) clusters.push(elB(EID.Clu,catB([elB(EID.TC,uintB(base)),...cur]))); };
+  for(const b of all){
+    const ms=Math.round(b.t/1000);
+    if(!cur || (ms-base)>1000 || (b.tr===1&&b.key&&ms-base>500)){ flush(); cur=[]; base=ms; }
+    cur.push(sBlock(b.tr, ms-base, b.key, b.data));
+  }
+  flush();
+  return catB([header, elB(EID.Seg, catB([info,tracks,...clusters]))]);
+}
+
+/* --- l'export rapide proprement dit --- */
+let fastAbort=false;
+async function fastExport(start, end, bps){
+  if(bgKind==='vid'){
+    setRec("Un fond vidéo n'est pas compatible avec l'export rapide. Utilise l'enregistrement classique, ou remplace le fond par une image.",'err');
+    return false;
+  }
+  if(!sourceFile){ setRec("Recharge le fichier audio avant d'exporter.",'err'); return false; }
+
+  fastAbort=false;
+  $('recBtn').disabled=true; $('fastBtn').disabled=true; $('stopBtn').disabled=false;
+  setRec('Décodage de l\u2019audio…','warn');
+
+  // audio en 48 kHz stéréo, format attendu par l'encodeur Opus
+  const ac=new (window.AudioContext||window.webkitAudioContext)();
+  let abuf;
+  try{ abuf = await ac.decodeAudioData(await sourceFile.arrayBuffer()); }
+  catch(e){ ac.close(); setRec("Audio illisible.",'err'); resetExport(); return false; }
+  ac.close();
+  const dur=Math.min(abuf.duration, end)-start;
+  if(dur<=0){ setRec('Intervalle vide.','err'); resetExport(); return false; }
+
+  const off=new OfflineAudioContext(2, Math.ceil(dur*48000), 48000);
+  const bs=off.createBufferSource(); bs.buffer=abuf;
+  bs.connect(off.destination); bs.start(0, start, dur);
+  const rendered=await off.startRendering();
+  const chL=rendered.getChannelData(0), chR=rendered.getChannelData(1);
+  const mono=new Float32Array(chL.length);
+  for(let i=0;i<chL.length;i++) mono[i]=(chL[i]+chR[i])/2;
+
+  const FPS=30, total=Math.ceil(dur*FPS);
+  const W=cv.width, H=cv.height;
+
+  // encodeurs
+  const vFrames=[], aPkts=[];
+  let vcodec='V_VP8', opusHead=null;
+  const vEnc=new VideoEncoder({
+    output:(chunk)=>{ const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
+      vFrames.push({data:d, ts:chunk.timestamp, key:chunk.type==='key'}); },
+    error:(e)=>{ console.error(e); fastAbort=true; }
+  });
+  let vcfg=null;
+  for(const c of [{codec:'vp09.00.10.08',m:'V_VP9'},{codec:'vp8',m:'V_VP8'}]){
+    try{
+      const sup=await VideoEncoder.isConfigSupported({codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS});
+      if(sup.supported){ vcfg={codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS}; vcodec=c.m; break; }
+    }catch(e){}
+  }
+  if(!vcfg){ setRec("Ton navigateur n'a pas d'encodeur vidéo compatible. Utilise l'enregistrement classique.",'err'); resetExport(); return false; }
+  vEnc.configure(vcfg);
+
+  const aEnc=new AudioEncoder({
+    output:(chunk,meta)=>{
+      if(meta && meta.decoderConfig && meta.decoderConfig.description && !opusHead)
+        opusHead=new Uint8Array(meta.decoderConfig.description);
+      const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
+      aPkts.push({data:d, ts:chunk.timestamp});
+    },
+    error:(e)=>{ console.error(e); }
+  });
+  aEnc.configure({codec:'opus', sampleRate:48000, numberOfChannels:2, bitrate:128000});
+
+  // audio : paquets de 20 ms
+  const FR=960;
+  for(let p=0; p+FR<=rendered.length; p+=FR){
+    const inter=new Float32Array(FR*2);
+    for(let i=0;i<FR;i++){ inter[i*2]=chL[p+i]; inter[i*2+1]=chR[p+i]; }
+    aEnc.encode(new AudioData({format:'f32', sampleRate:48000, numberOfFrames:FR,
+      numberOfChannels:2, timestamp: Math.round(p/48000*1e6), data:inter}));
+  }
+  await aEnc.flush(); aEnc.close();
+
+  // vidéo : on rend chaque image puis on l'encode
+  offlineMode=true; offlineDt=1/FPS;
+  flowT=0; scrollY=null; levelSmooth=0;
+  const prevSm=new Float32Array(freq? freq.length:1024);
+  const smooth=0.3+(+$('specSmooth').value/100)*0.65;
+  if(!freq) freq=new Uint8Array(1024);
+  if(!timeData) timeData=new Uint8Array(1024);
+
+  for(let f=0; f<total; f++){
+    if(fastAbort){ break; }
+    const t=start + f/FPS;
+    fillFreqFromPcm(mono, Math.round((t-start)*48000)-FFT_N/2, freq, prevSm, smooth);
+    renderScene(t);
+    const vf=new VideoFrame(cv,{timestamp: Math.round(f/FPS*1e6), duration: Math.round(1e6/FPS)});
+    vEnc.encode(vf,{keyFrame: f%60===0});
+    vf.close();
+    if(f%6===0){
+      $('recBar').style.width=(f/total*100).toFixed(1)+'%';
+      setRec('Encodage — image '+f+' sur '+total+'…','warn');
+      await new Promise(r=>setTimeout(r,0));      // laisse l'écran respirer
+      if(vEnc.encodeQueueSize>12) await new Promise(r=>setTimeout(r,30));
+    }
+  }
+  await vEnc.flush(); vEnc.close();
+  offlineMode=false;
+
+  if(fastAbort){ setRec('Export annulé.','warn'); resetExport(); return true; }
+
+  setRec('Assemblage du fichier…','warn');
+  const bytes=buildWebM({width:W,height:H,vcodec,frames:vFrames,audio:aPkts,
+    opusHead, sampleRate:48000, channels:2});
+  const blob=new Blob([bytes],{type:'video/webm'});
+  vFrames.length=0; aPkts.length=0;
+  lastBlob=blob;
+  lastName=(($('songTitle').value||'lyric-video').replace(/[^\w\-]+/g,'_'))+'.webm';
+  dl(blob,lastName);
+  showResult(blob,'webm');
+  setRec('Terminé — '+(blob.size/1048576).toFixed(1)+' Mo.','');
+  resetExport();
+  return true;
+}
+function resetExport(){
+  offlineMode=false;
+  $('recBtn').disabled=false; $('stopBtn').disabled=true;
+  $('fastBtn').disabled=!FAST_OK;
+}
+
 /* ---------- Résultat : revoir, retélécharger, partager ---------- */
 let lastBlob=null, lastName='', lastUrl=null;
 
@@ -1916,12 +2184,76 @@ $('shareBtn').onclick = async ()=>{
   }
 };
 
+// disponibilité de l'export rapide
+(function(){
+  const n=$('fastNote');
+  if(FAST_OK){
+    n.innerHTML = "<strong>Export rapide</strong> : les images sont calculées et encodées aussi vite que possible, souvent bien plus vite que la durée du morceau. Incompatible avec un fond vidéo.<br><strong>Enregistrement classique</strong> : filme l'aperçu en temps réel, accepte tous les fonds.";
+  } else {
+    n.textContent = "L'export rapide n'est pas disponible sur ce navigateur. Utilise l'enregistrement classique.";
+    $('fastBtn').disabled=true;
+  }
+})();
+
 /* ---------- Raccourci : espace = marquer ---------- */
 document.addEventListener('keydown',e=>{
   if(e.code==='Space' && document.activeElement.tagName!=='TEXTAREA' && document.activeElement.tagName!=='INPUT'){
     e.preventDefault(); $('tapBtn').click();
   }
 });
+
+/* ---------- Préréglages ----------
+   Tous les réglages visuels sont conservés dans le stockage local du
+   navigateur, donc disponibles hors connexion et d'une session à l'autre. */
+const STYLE_KEYS = ['specType','colorMode','specColor','flowSpread','flowShift','specSize',
+ 'specCount','specSmooth','sphVariant','sphTwist','sphBands','sphContrast','sphN','sphDot',
+ 'sphDeform','sphWave','sphSpin','sphTilt','sphRings','sphGlow','sphPos','flowSpeed','flowTurb',
+ 'flowLayers','flowThick','flowGlow','flowPos','textMode','scrollEase','lineGap','visLines',
+ 'lyricGlow','lyricPulse','edgeFade','fontFam','fontSize','textPos','textColor','activeColor',
+ 'ctxLines','anim','shadow','upper','format','bgDark','bgBlur','bgZoom','bgPulse','fade'];
+
+const PRESET_STORE='lyricstudio.presets';
+function presetsAll(){
+  try{ return JSON.parse(localStorage.getItem(PRESET_STORE)||'{}'); }catch(e){ return {}; }
+}
+function presetsWrite(o){
+  try{ localStorage.setItem(PRESET_STORE, JSON.stringify(o)); return true; }
+  catch(e){ setPreset("Espace de stockage insuffisant.",'err'); return false; }
+}
+function setPreset(m,c){ const s=$('presetStatus'); s.textContent=m; s.className='status '+(c||''); }
+function refreshPresets(sel){
+  const all=presetsAll(), names=Object.keys(all).sort();
+  const el=$('presetList');
+  el.innerHTML = names.length
+    ? names.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>').join('')
+    : '<option value="">— aucun préréglage enregistré —</option>';
+  if(sel && names.includes(sel)) el.value=sel;
+}
+$('presetSave').onclick = ()=>{
+  const name=(prompt("Nom du préréglage (par exemple : Album Fureur au Sahel)")||'').trim();
+  if(!name) return;
+  const all=presetsAll();
+  if(all[name] && !confirm("« "+name+" » existe déjà. Le remplacer ?")) return;
+  const data={};
+  STYLE_KEYS.forEach(k=>{ if($(k)) data[k]=$(k).value; });
+  all[name]=data;
+  if(presetsWrite(all)){ refreshPresets(name); setPreset("« "+name+" » enregistré.",''); }
+};
+$('presetLoad').onclick = ()=>{
+  const name=$('presetList').value; if(!name) return;
+  const d=presetsAll()[name]; if(!d){ setPreset('Préréglage introuvable.','err'); return; }
+  STYLE_KEYS.forEach(k=>{ if($(k) && d[k]!==undefined) $(k).value=d[k]; });
+  applyFormat(); toggleTextOpts(); toggleSpecOpts(); toggleSphVariant();
+  layoutKey=''; scrollY=null; blurKey='';
+  setPreset("« "+name+" » appliqué.",'');
+};
+$('presetDel').onclick = ()=>{
+  const name=$('presetList').value; if(!name) return;
+  if(!confirm("Supprimer « "+name+" » ?")) return;
+  const all=presetsAll(); delete all[name];
+  presetsWrite(all); refreshPresets(); setPreset('Supprimé.','');
+};
+refreshPresets();
 
 /* ---------- Installation ---------- */
 let deferredPrompt=null;
