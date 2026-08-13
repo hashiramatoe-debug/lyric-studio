@@ -173,6 +173,7 @@
   <h1>Lyric<span>Studio</span></h1>
   <p>Spectre audio + paroles synchronisées</p>
   <span id="offBadge" style="display:none;font-size:11px;color:var(--amber);border:1px solid var(--amber);border-radius:999px;padding:3px 9px">hors connexion</span>
+  <span id="sessNote" style="font-size:11px;color:var(--mint);opacity:0;transition:opacity .4s;flex-basis:100%"></span>
   <button id="installBtn" style="display:none;margin-left:auto;padding:7px 12px;font-size:12.5px" class="mint">Installer</button>
 </header>
 
@@ -212,6 +213,20 @@
       <input type="file" id="audioFile" accept="audio/*">
       <div class="status" id="audioStatus"></div>
     </div>
+    <div class="card">
+      <h2>Ton travail est conservé</h2>
+      <p class="hint">Paroles, repères de temps, réglages, audio et image de fond sont enregistrés au fur et à mesure. Tu peux fermer l'application : tout revient à la réouverture.</p>
+      <p class="hint" style="color:var(--amber)">En revanche, effacer les données du navigateur supprime tout. Fais une sauvegarde dans un fichier avant tout nettoyage.</p>
+      <div class="btns">
+        <button class="ghost" id="backupSave">Sauvegarder dans un fichier</button>
+        <label class="filebtn" for="backupFile" style="padding:11px;flex:1;min-width:130px;border-style:solid;border-width:1px;font-size:14px;font-weight:600;color:var(--text)">Restaurer une sauvegarde</label>
+        <input type="file" id="backupFile" accept=".json">
+      </div>
+      <div class="btns">
+        <button class="ghost danger" id="sessClear">Repartir de zéro</button>
+      </div>
+    </div>
+
     <div class="card">
       <h2>Titre affiché</h2>
       <p class="hint">Affiché en haut de la vidéo. Laisse vide pour ne rien afficher.</p>
@@ -359,10 +374,15 @@
       <select id="presetList"><option value="">— aucun préréglage enregistré —</option></select>
       <div class="btns">
         <button class="primary" id="presetLoad">Appliquer</button>
-        <button class="ghost" id="presetSave">Enregistrer sous…</button>
         <button class="ghost danger" id="presetDel">Supprimer</button>
       </div>
+      <label class="field">Nom du nouveau préréglage</label>
+      <input type="text" id="presetName" placeholder="Album Fureur au Sahel" maxlength="60">
+      <div class="btns">
+        <button class="mint" id="presetSave">Enregistrer les réglages actuels</button>
+      </div>
       <div class="status" id="presetStatus"></div>
+      <p class="hint" style="margin-top:10px">Le nombre de préréglages n'est pas limité. Un nom déjà utilisé remplace l'ancien après confirmation.</p>
     </div>
     <div class="card">
       <h2>Spectre audio</h2>
@@ -455,6 +475,56 @@
       </div>
     </div>
     <div class="card">
+      <h2>Disque tournant</h2>
+      <p class="hint">Un vinyle ou un CD qui tourne au rythme du morceau, avec la pochette de l'album au centre.</p>
+      <label class="field">Afficher le disque</label>
+      <select id="discOn">
+        <option value="0" selected>Non</option>
+        <option value="1">Oui</option>
+      </select>
+
+      <div id="discOpts">
+        <label class="filebtn" id="discLabel" for="discFile" style="margin-top:10px">
+          <strong>Choisir la pochette</strong>
+          Une image carrée donne le meilleur résultat
+        </label>
+        <input type="file" id="discFile" accept="image/*">
+
+        <label class="field">Style</label>
+        <select id="discStyle">
+          <option value="vinyl" selected>Vinyle — sillons et étiquette centrale</option>
+          <option value="cd">CD — reflets irisés</option>
+          <option value="photo">Pochette ronde — image pleine</option>
+        </select>
+
+        <label class="field">Taille</label>
+        <input type="range" id="discSize" min="10" max="80" value="34">
+        <label class="field">Position horizontale</label>
+        <input type="range" id="discX" min="0" max="100" value="50">
+        <label class="field">Position verticale</label>
+        <input type="range" id="discY" min="0" max="100" value="38">
+
+        <label class="field">Vitesse de rotation</label>
+        <input type="range" id="discSpin" min="0" max="100" value="35">
+        <label class="field">Pulsation avec les basses</label>
+        <input type="range" id="discPulse" min="0" max="100" value="45">
+        <label class="field">Halo lumineux</label>
+        <input type="range" id="discGlow" min="0" max="100" value="55">
+        <label class="field">Anneau réactif au son</label>
+        <input type="range" id="discRing" min="0" max="100" value="60">
+        <label class="field">Reflet tournant</label>
+        <input type="range" id="discShine" min="0" max="100" value="50">
+        <label class="field">Ombre portée</label>
+        <input type="range" id="discShadow" min="0" max="100" value="60">
+        <label class="field">Bras de lecture</label>
+        <select id="discArm">
+          <option value="0">Non</option>
+          <option value="1" selected>Oui</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Texte des paroles</h2>
       <label class="field">Mode d'affichage</label>
       <select id="textMode">
@@ -528,10 +598,12 @@
       </div>
       <label class="field">Qualité d'enregistrement</label>
       <select id="recQuality">
-        <option value="1200000">Légère — recommandée sur téléphone</option>
-        <option value="2200000" selected>Normale</option>
+        <option value="700000">Très légère — pour les longs morceaux</option>
+        <option value="1200000" selected>Légère — recommandée sur téléphone</option>
+        <option value="2200000">Normale</option>
         <option value="3500000">Élevée — mémoire importante</option>
       </select>
+      <p class="hint" id="qNote" style="margin-top:6px"></p>
       <div class="btns">
         <button class="mint" id="fastBtn">Export rapide</button>
         <button class="primary" id="recBtn">Enregistrement classique</button>
@@ -578,7 +650,7 @@ let audioCtx=null, analyser=null, srcNode=null, mediaDest=null;
 let freq=null, timeData=null;
 let barsSmooth = [];
 let recorder=null, chunks=[], recording=false, recEnd=0;
-let audioUrl=null, bgUrl=null;
+let audioUrl=null, bgUrl=null, discUrl=null;
 
 /* ---------- Onglets ---------- */
 document.querySelectorAll('.tab').forEach(t=>{
@@ -617,6 +689,8 @@ $('audioFile').onchange = e=>{
   $('audioLabel').classList.add('loaded');
   $('audioLabel').innerHTML = '<strong>'+f.name+'</strong>Appuie pour changer de fichier';
   $('audioStatus').textContent = 'Audio chargé.';
+  idbPut('audio',{blob:f, name:f.name, type:f.type});
+  markDirty();
   if(!$('songTitle').value) $('songTitle').value = f.name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ');
 };
 
@@ -693,8 +767,9 @@ $('splitAuto').onclick = ()=>{
 };
 
 /* ---------- Synchro ---------- */
-let syncIdx = 0;
+let syncIdx = 0, syncResetArm=false;
 function renderSyncList(){
+  markDirty();
   const el = $('syncList'); el.innerHTML='';
   lyrics.forEach((l,i)=>{
     const d=document.createElement('div');
@@ -729,7 +804,11 @@ $('syncPlay').onclick = ()=>{
 };
 $('syncBack').onclick = ()=>{ audio.currentTime = Math.max(0, audio.currentTime-3); };
 $('syncReset').onclick = ()=>{
-  if(!confirm('Effacer tous les repères de temps ?')) return;
+  if(syncResetArm!==true){ syncResetArm=true;
+    $('asrStatus'); const b=$('syncReset'); b.textContent='Confirmer l\u2019effacement';
+    setTimeout(()=>{ syncResetArm=false; b.textContent='Tout effacer'; }, 4000);
+    return; }
+  syncResetArm=false; $('syncReset').textContent='Tout effacer';
   lyrics.forEach(l=>l.time=null); syncIdx=0; renderSyncList();
 };
 $('tapBtn').onclick = ()=>{
@@ -809,9 +888,25 @@ $('bgFile').onchange = e=>{
   }
   $('bgLabel').classList.add('loaded');
   $('bgLabel').innerHTML='<strong>'+f.name+'</strong>Appuie pour changer';
+  idbPut('bg',{blob:f, name:f.name, type:f.type});
+  markDirty();
 };
+$('discFile').onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(discUrl) URL.revokeObjectURL(discUrl);
+  discUrl=URL.createObjectURL(f);
+  const im=new Image();
+  im.onload=()=>{ discImg=im; artCacheKey=''; };
+  im.src=discUrl;
+  $('discLabel').classList.add('loaded');
+  $('discLabel').innerHTML='<strong>'+f.name+'</strong>Appuie pour changer';
+  idbPut('disc',{blob:f, name:f.name, type:f.type});
+  markDirty();
+};
+
 $('clearBg').onclick=()=>{
   bgImage=null; bgKind=null; bgVideo.pause(); bgVideo.removeAttribute('src');
+  idbDel('bg'); markDirty();
   $('bgLabel').classList.remove('loaded');
   $('bgLabel').innerHTML='<strong>Choisir une image ou une vidéo</strong>JPG, PNG, WEBP, MP4 ou WEBM';
 };
@@ -950,6 +1045,9 @@ function renderScene(t){
   ctx.fillStyle='rgba(0,0,0,'+(+$('bgDark').value/100)+')';
   ctx.fillRect(0,0,W,H);
 
+  // ---- disque tournant ----
+  drawDisc(W,H,bass,levelSmooth);
+
   // ---- spectre ----
   drawSpectrum(W,H,bass);
 
@@ -974,6 +1072,223 @@ function renderScene(t){
     $('recBar').style.width=(p*100).toFixed(1)+'%';
     if(t>=recEnd) stopRec();
   }
+}
+
+
+/* ================= DISQUE TOURNANT =================
+   Le corps du disque (sillons, reflets irisés) est dessiné une seule fois
+   dans un canevas séparé, puis simplement pivoté à chaque image. Redessiner
+   soixante sillons par image coûterait bien plus cher que tout le reste. */
+let discImg = null, discAngle = 0;
+const discCv = document.createElement('canvas'), discCx = discCv.getContext('2d');
+const artCv  = document.createElement('canvas'), artCx  = artCv.getContext('2d');
+let discCacheKey = '', artCacheKey = '';
+
+/* Corps du disque, dessiné une fois pour toutes */
+function buildDiscBody(px, style){
+  const key = px+'|'+style;
+  if(discCacheKey===key) return discCv;
+  discCv.width = discCv.height = px;
+  const c = discCx, R = px/2;
+  c.clearRect(0,0,px,px);
+  c.save();
+  c.translate(R,R);
+
+  if(style==='cd'){
+    // reflets irisés : des secteurs colorés balayant tout le disque
+    const steps = 48;
+    for(let i=0;i<steps;i++){
+      const a0 = i/steps*Math.PI*2, a1=(i+1.02)/steps*Math.PI*2;
+      const hue = (i/steps*360);
+      const g = c.createRadialGradient(0,0,R*0.16,0,0,R);
+      g.addColorStop(0,   'hsl('+hue+' 70% 42%)');
+      g.addColorStop(0.5, 'hsl('+((hue+40)%360)+' 85% 62%)');
+      g.addColorStop(1,   'hsl('+((hue+80)%360)+' 70% 38%)');
+      c.fillStyle=g;
+      c.beginPath(); c.moveTo(0,0); c.arc(0,0,R,a0,a1); c.closePath(); c.fill();
+    }
+    // voile sombre pour éviter la saturation
+    c.globalCompositeOperation='multiply';
+    c.fillStyle='rgba(120,130,160,0.55)';
+    c.beginPath(); c.arc(0,0,R,0,6.284); c.fill();
+    c.globalCompositeOperation='source-over';
+  } else {
+    // vinyle : noir profond, très légèrement dégradé
+    const g = c.createRadialGradient(-R*0.3,-R*0.3,R*0.05,0,0,R);
+    g.addColorStop(0,'#232733'); g.addColorStop(0.55,'#111420'); g.addColorStop(1,'#05070C');
+    c.fillStyle=g;
+    c.beginPath(); c.arc(0,0,R,0,6.284); c.fill();
+
+    // sillons
+    c.lineWidth = Math.max(0.5, px/620);
+    for(let r=R*0.34; r<R*0.985; r+=Math.max(1.4, px/210)){
+      const t = (r/R-0.34)/0.645;
+      c.strokeStyle = 'rgba(255,255,255,'+(0.020+0.045*Math.abs(Math.sin(t*11))).toFixed(3)+')';
+      c.beginPath(); c.arc(0,0,r,0,6.284); c.stroke();
+    }
+    // bandes de séparation entre morceaux
+    [0.46,0.63,0.79].forEach(f=>{
+      c.strokeStyle='rgba(255,255,255,0.10)';
+      c.lineWidth=Math.max(1,px/300);
+      c.beginPath(); c.arc(0,0,R*f,0,6.284); c.stroke();
+    });
+  }
+
+  // bord extérieur
+  c.strokeStyle='rgba(255,255,255,0.16)';
+  c.lineWidth=Math.max(1,px/300);
+  c.beginPath(); c.arc(0,0,R*0.995,0,6.284); c.stroke();
+
+  c.restore();
+  discCacheKey=key;
+  return discCv;
+}
+
+/* Pochette découpée en rond, mise en cache */
+function buildArt(px){
+  const key = px+'|'+(discImg? discImg.src.slice(-24):'none');
+  if(artCacheKey===key) return artCv;
+  artCv.width=artCv.height=px;
+  artCx.clearRect(0,0,px,px);
+  if(discImg){
+    artCx.save();
+    artCx.beginPath(); artCx.arc(px/2,px/2,px/2,0,6.284); artCx.clip();
+    const s=Math.max(px/discImg.width, px/discImg.height);
+    const w=discImg.width*s, hh=discImg.height*s;
+    artCx.drawImage(discImg,(px-w)/2,(px-hh)/2,w,hh);
+    artCx.restore();
+  }
+  artCacheKey=key;
+  return artCv;
+}
+
+function drawDisc(W,H,bass,level){
+  if($('discOn').value!=='1') return;
+
+  const style  = $('discStyle').value;
+  const size   = +$('discSize').value/100;
+  const cx     = W*(+$('discX').value/100);
+  const cy     = H*(+$('discY').value/100);
+  const spin   = +$('discSpin').value/100;
+  const pulse  = +$('discPulse').value/100;
+  const glow   = +$('discGlow').value/100;
+  const ring   = +$('discRing').value/100;
+  const shine  = +$('discShine').value/100;
+  const shadow = +$('discShadow').value/100;
+  const arm    = $('discArm').value==='1';
+
+  // 33 tours par minute à mi-course du curseur, comme un vrai vinyle
+  discAngle += frameDt() * (0.35 + spin*3.2) * (1 + bass*pulse*0.6);
+
+  const R = Math.min(W,H)*0.5*size*(1 + bass*pulse*0.045);
+  const px = Math.max(64, Math.round(Math.min(W,H)*0.5*size*2));
+
+  ctx.save();
+
+  // ombre portée : donne l'impression que le disque flotte
+  if(shadow>0.02){
+    const sg=ctx.createRadialGradient(cx,cy+R*0.10,R*0.5,cx,cy+R*0.10,R*1.35);
+    sg.addColorStop(0,'rgba(0,0,0,'+(0.55*shadow).toFixed(2)+')');
+    sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg;
+    ctx.beginPath(); ctx.arc(cx,cy+R*0.10,R*1.35,0,6.284); ctx.fill();
+  }
+
+  // halo coloré derrière le disque
+  if(glow>0.02){
+    const hc = $('colorMode').value==='rainbow'
+      ? 'hsl('+((flowT*12+levelSmooth*300)%360).toFixed(0)+' 95% 60%)'
+      : $('specColor').value;
+    const gg=ctx.createRadialGradient(cx,cy,R*0.75,cx,cy,R*1.6);
+    gg.addColorStop(0,hc); gg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.20*glow*(0.45+level*1.4);
+    ctx.fillStyle=gg;
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.6,0,6.284); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+  }
+
+  // corps du disque, pivoté
+  const body=buildDiscBody(px, style);
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(discAngle);
+  if(style!=='photo') ctx.drawImage(body,-R,-R,R*2,R*2);
+
+  // pochette : petite étiquette sur un vinyle, disque entier sinon
+  const artR = style==='vinyl' ? R*0.335 : (style==='cd' ? R*0.62 : R);
+  if(discImg){
+    const art=buildArt(Math.max(48,Math.round(artR*2)));
+    ctx.drawImage(art,-artR,-artR,artR*2,artR*2);
+  } else if(style==='vinyl'){
+    const lg=ctx.createRadialGradient(0,0,artR*0.1,0,0,artR);
+    lg.addColorStop(0,'#E8B14A'); lg.addColorStop(1,'#B8792A');
+    ctx.fillStyle=lg;
+    ctx.beginPath(); ctx.arc(0,0,artR,0,6.284); ctx.fill();
+  }
+
+  // trou central et cercle de l'étiquette
+  if(style!=='photo'){
+    ctx.strokeStyle='rgba(0,0,0,0.45)'; ctx.lineWidth=Math.max(1,R*0.008);
+    ctx.beginPath(); ctx.arc(0,0,artR,0,6.284); ctx.stroke();
+    ctx.fillStyle='#07090F';
+    ctx.beginPath(); ctx.arc(0,0,R*0.022,0,6.284); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=Math.max(0.8,R*0.004);
+    ctx.beginPath(); ctx.arc(0,0,R*0.022,0,6.284); ctx.stroke();
+  }
+  ctx.restore();
+
+  // reflet : une bande claire qui balaie la surface, indépendante de la rotation
+  if(shine>0.02 && style!=='photo'){
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(discAngle*0.32 + 0.6);
+    ctx.globalCompositeOperation='lighter';
+    const sh=ctx.createLinearGradient(-R,-R,R,R);
+    sh.addColorStop(0.00,'rgba(255,255,255,0)');
+    sh.addColorStop(0.42,'rgba(255,255,255,'+(0.10*shine).toFixed(3)+')');
+    sh.addColorStop(0.50,'rgba(255,255,255,'+(0.26*shine).toFixed(3)+')');
+    sh.addColorStop(0.58,'rgba(255,255,255,'+(0.10*shine).toFixed(3)+')');
+    sh.addColorStop(1.00,'rgba(255,255,255,0)');
+    ctx.fillStyle=sh;
+    ctx.beginPath(); ctx.arc(0,0,R*0.995,0,6.284); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.restore();
+  }
+
+  // anneau réactif : son épaisseur suit le niveau sonore
+  if(ring>0.02){
+    const hc = $('colorMode').value==='rainbow'
+      ? 'hsl('+((flowT*12+levelSmooth*300+40)%360).toFixed(0)+' 95% 65%)'
+      : $('specColor').value;
+    ctx.strokeStyle=hc;
+    ctx.globalAlpha=0.35+0.5*level;
+    ctx.lineWidth=Math.max(1, R*0.012*ring*(0.4+level*2.2));
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.045+R*0.05*level*ring,0,6.284); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  // bras de lecture
+  if(arm && style==='vinyl'){
+    const bx=cx+R*1.02, by=cy-R*0.92;
+    const drop=0.42+0.06*Math.sin(flowT*0.4);      // avance lentement vers le centre
+    const tipR=R*(0.92-drop*0.55);
+    const ang=Math.atan2(cy-by, cx-bx);
+    const tipX=bx+Math.cos(ang)*(R*1.02+tipR*0.05), tipY=by+Math.sin(ang)*(R*1.02+tipR*0.05);
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.6)'; ctx.shadowBlur=R*0.05;
+    ctx.strokeStyle='#C9CEDC'; ctx.lineCap='round';
+    ctx.lineWidth=Math.max(1.5,R*0.028);
+    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(tipX,tipY); ctx.stroke();
+    ctx.fillStyle='#8E96AA';
+    ctx.beginPath(); ctx.arc(bx,by,R*0.075,0,6.284); ctx.fill();
+    ctx.fillStyle='#E8ECF5';
+    ctx.beginPath(); ctx.arc(tipX,tipY,R*0.030,0,6.284); ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
 }
 
 function drawSpectrum(W,H,bass){
@@ -1940,24 +2255,38 @@ function fftRadix2(re, im){
   }
 }
 
-const FFT_N = 2048;
+/* L'analyse tourne sur un signal mono ramené à 16 kHz : quatre fois moins
+   de mémoire que le 48 kHz stéréo, pour un spectre visuellement identique
+   (au-delà de 8 kHz, la musique n'a presque plus d'énergie). */
+const ANA_RATE = 16000;
+const FFT_N = 1024;
 const hann = new Float32Array(FFT_N);
 for(let i=0;i<FFT_N;i++) hann[i]=0.5-0.5*Math.cos(2*Math.PI*i/(FFT_N-1));
+const fftRe = new Float32Array(FFT_N), fftIm = new Float32Array(FFT_N);
+const magBuf = new Float32Array(FFT_N/2);
 
 /* Reproduit getByteFrequencyData : magnitude en décibels ramenée sur 0-255 */
 function fillFreqFromPcm(pcm, startSample, out, prev, smooth){
-  const re=new Float32Array(FFT_N), im=new Float32Array(FFT_N);
   for(let i=0;i<FFT_N;i++){
     const s=startSample+i;
-    re[i]=(s>=0&&s<pcm.length? pcm[s]:0)*hann[i];
+    fftRe[i]=(s>=0&&s<pcm.length? pcm[s]:0)*hann[i];
+    fftIm[i]=0;
   }
-  fftRadix2(re,im);
+  fftRadix2(fftRe,fftIm);
+  for(let i=0;i<FFT_N/2;i++)
+    magBuf[i]=Math.sqrt(fftRe[i]*fftRe[i]+fftIm[i]*fftIm[i])/FFT_N*2;
+
+  // on replace les magnitudes sur l'échelle de fréquences de l'analyseur
+  // en direct, pour que l'aperçu et l'export donnent le même rendu
   const bins=out.length;
   for(let i=0;i<bins;i++){
-    const mag=Math.sqrt(re[i]*re[i]+im[i]*im[i])/FFT_N*2;
-    let db=20*Math.log10(mag+1e-10);
-    let v=(db+100)/70;                       // -100 dB .. -30 dB
-    v=Math.max(0,Math.min(1,v));
+    const f = i/bins*24000;
+    let v=0;
+    if(f < ANA_RATE/2){
+      const b=Math.min(FFT_N/2-1, Math.round(f/(ANA_RATE/2)*(FFT_N/2)));
+      const db=20*Math.log10(magBuf[b]+1e-10);
+      v=Math.max(0,Math.min(1,(db+100)/70));
+    }
     prev[i]=prev[i]*smooth+v*(1-smooth);
     out[i]=Math.round(prev[i]*255);
   }
@@ -2032,107 +2361,168 @@ async function fastExport(start, end, bps){
 
   fastAbort=false;
   $('recBtn').disabled=true; $('fastBtn').disabled=true; $('stopBtn').disabled=false;
-  setRec('Décodage de l\u2019audio…','warn');
 
-  // audio en 48 kHz stéréo, format attendu par l'encodeur Opus
-  const ac=new (window.AudioContext||window.webkitAudioContext)();
-  let abuf;
-  try{ abuf = await ac.decodeAudioData(await sourceFile.arrayBuffer()); }
-  catch(e){ ac.close(); setRec("Audio illisible.",'err'); resetExport(); return false; }
-  ac.close();
-  const dur=Math.min(abuf.duration, end)-start;
-  if(dur<=0){ setRec('Intervalle vide.','err'); resetExport(); return false; }
-
-  const off=new OfflineAudioContext(2, Math.ceil(dur*48000), 48000);
-  const bs=off.createBufferSource(); bs.buffer=abuf;
-  bs.connect(off.destination); bs.start(0, start, dur);
-  const rendered=await off.startRendering();
-  const chL=rendered.getChannelData(0), chR=rendered.getChannelData(1);
-  const mono=new Float32Array(chL.length);
-  for(let i=0;i<chL.length;i++) mono[i]=(chL[i]+chR[i])/2;
-
-  const FPS=30, total=Math.ceil(dur*FPS);
-  const W=cv.width, H=cv.height;
-
-  // encodeurs
-  const vFrames=[], aPkts=[];
-  let vcodec='V_VP8', opusHead=null;
-  const vEnc=new VideoEncoder({
-    output:(chunk)=>{ const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
-      vFrames.push({data:d, ts:chunk.timestamp, key:chunk.type==='key'}); },
-    error:(e)=>{ console.error(e); fastAbort=true; }
-  });
-  let vcfg=null;
-  for(const c of [{codec:'vp09.00.10.08',m:'V_VP9'},{codec:'vp8',m:'V_VP8'}]){
-    try{
-      const sup=await VideoEncoder.isConfigSupported({codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS});
-      if(sup.supported){ vcfg={codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS}; vcodec=c.m; break; }
-    }catch(e){}
-  }
-  if(!vcfg){ setRec("Ton navigateur n'a pas d'encodeur vidéo compatible. Utilise l'enregistrement classique.",'err'); resetExport(); return false; }
-  vEnc.configure(vcfg);
-
-  const aEnc=new AudioEncoder({
-    output:(chunk,meta)=>{
-      if(meta && meta.decoderConfig && meta.decoderConfig.description && !opusHead)
-        opusHead=new Uint8Array(meta.decoderConfig.description);
-      const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
-      aPkts.push({data:d, ts:chunk.timestamp});
-    },
-    error:(e)=>{ console.error(e); }
-  });
-  aEnc.configure({codec:'opus', sampleRate:48000, numberOfChannels:2, bitrate:128000});
-
-  // audio : paquets de 20 ms
-  const FR=960;
-  for(let p=0; p+FR<=rendered.length; p+=FR){
-    const inter=new Float32Array(FR*2);
-    for(let i=0;i<FR;i++){ inter[i*2]=chL[p+i]; inter[i*2+1]=chR[p+i]; }
-    aEnc.encode(new AudioData({format:'f32', sampleRate:48000, numberOfFrames:FR,
-      numberOfChannels:2, timestamp: Math.round(p/48000*1e6), data:inter}));
-  }
-  await aEnc.flush(); aEnc.close();
-
-  // vidéo : on rend chaque image puis on l'encode
-  offlineMode=true; offlineDt=1/FPS;
-  flowT=0; scrollY=null; levelSmooth=0;
-  const prevSm=new Float32Array(freq? freq.length:1024);
-  const smooth=0.3+(+$('specSmooth').value/100)*0.65;
-  if(!freq) freq=new Uint8Array(1024);
-  if(!timeData) timeData=new Uint8Array(1024);
-
-  for(let f=0; f<total; f++){
-    if(fastAbort){ break; }
-    const t=start + f/FPS;
-    fillFreqFromPcm(mono, Math.round((t-start)*48000)-FFT_N/2, freq, prevSm, smooth);
-    renderScene(t);
-    const vf=new VideoFrame(cv,{timestamp: Math.round(f/FPS*1e6), duration: Math.round(1e6/FPS)});
-    vEnc.encode(vf,{keyFrame: f%60===0});
-    vf.close();
-    if(f%6===0){
-      $('recBar').style.width=(f/total*100).toFixed(1)+'%';
-      setRec('Encodage — image '+f+' sur '+total+'…','warn');
-      await new Promise(r=>setTimeout(r,0));      // laisse l'écran respirer
-      if(vEnc.encodeQueueSize>12) await new Promise(r=>setTimeout(r,30));
+  const FPS=30, W=cv.width, H=cv.height;
+  const durWanted = Math.min(end, audio.duration||end) - start;
+  const estMo = bps*durWanted/8/1048576;
+  if(estMo > 70){
+    if(!confirm("Cette vidéo occupera environ "+estMo.toFixed(0)+" Mo en mémoire pendant l'encodage.\n\n"
+      + "Au-delà d'une soixantaine de mégaoctets, le téléphone peut fermer l'application, voire redémarrer.\n\n"
+      + "Baisse la qualité, ou découpe le morceau en deux parties avec les champs Début et Fin.\n\nContinuer ?")){
+      resetExport(); return false;
     }
   }
-  await vEnc.flush(); vEnc.close();
-  offlineMode=false;
 
-  if(fastAbort){ setRec('Export annulé.','warn'); resetExport(); return true; }
+  let vFrames=[], aPkts=[], vEnc=null, aEnc=null, ana=null;
+  let bytesOut=0;
+  const BUDGET = 130*1048576;      // au-delà, on s'arrête proprement
 
-  setRec('Assemblage du fichier…','warn');
-  const bytes=buildWebM({width:W,height:H,vcodec,frames:vFrames,audio:aPkts,
-    opusHead, sampleRate:48000, channels:2});
-  const blob=new Blob([bytes],{type:'video/webm'});
-  vFrames.length=0; aPkts.length=0;
-  lastBlob=blob;
-  lastName=(($('songTitle').value||'lyric-video').replace(/[^\w\-]+/g,'_'))+'.webm';
-  dl(blob,lastName);
-  showResult(blob,'webm');
-  setRec('Terminé — '+(blob.size/1048576).toFixed(1)+' Mo.','');
-  resetExport();
-  return true;
+  try{
+    setRec("Décodage de l\u2019audio…",'warn');
+    await new Promise(r=>setTimeout(r,0));
+
+    // --- étape 1 : décodage, puis ré-échantillonnage en 48 kHz stéréo ---
+    let rendered;
+    {
+      const ac=new (window.AudioContext||window.webkitAudioContext)();
+      let abuf;
+      try{ abuf = await ac.decodeAudioData(await sourceFile.arrayBuffer()); }
+      catch(e){ ac.close(); setRec("Audio illisible.",'err'); resetExport(); return false; }
+      ac.close();
+      const dur=Math.min(abuf.duration, end)-start;
+      if(dur<=0){ setRec('Intervalle vide.','err'); resetExport(); return false; }
+      const off=new OfflineAudioContext(2, Math.ceil(dur*48000), 48000);
+      const bs=off.createBufferSource(); bs.buffer=abuf;
+      bs.connect(off.destination); bs.start(0, start, dur);
+      rendered = await off.startRendering();
+      abuf = null;               // libéré tout de suite : environ 66 Mo
+    }
+
+    // --- étape 2 : encodage audio, puis libération du 48 kHz ---
+    setRec("Encodage de l\u2019audio…",'warn');
+    let opusHead=null;
+    aEnc=new AudioEncoder({
+      output:(chunk,meta)=>{
+        if(meta && meta.decoderConfig && meta.decoderConfig.description && !opusHead)
+          opusHead=new Uint8Array(meta.decoderConfig.description);
+        const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
+        bytesOut+=d.length;
+        aPkts.push({data:d, ts:chunk.timestamp});
+      },
+      error:(e)=>{ console.error(e); }
+    });
+    aEnc.configure({codec:'opus', sampleRate:48000, numberOfChannels:2, bitrate:128000});
+
+    {
+      const chL=rendered.getChannelData(0), chR=rendered.getChannelData(1);
+      const FR=960, inter=new Float32Array(FR*2);
+      for(let p=0; p+FR<=rendered.length; p+=FR){
+        for(let i=0;i<FR;i++){ inter[i*2]=chL[p+i]; inter[i*2+1]=chR[p+i]; }
+        aEnc.encode(new AudioData({format:'f32', sampleRate:48000, numberOfFrames:FR,
+          numberOfChannels:2, timestamp: Math.round(p/48000*1e6), data:inter}));
+        if(p % (FR*200) === 0){
+          await new Promise(r=>setTimeout(r,0));
+          if(aEnc.encodeQueueSize>40) await new Promise(r=>setTimeout(r,20));
+        }
+      }
+      await aEnc.flush(); aEnc.close(); aEnc=null;
+
+      // signal d'analyse : mono 16 kHz, soit un quart de la place
+      const ratio = 48000/ANA_RATE;
+      ana = new Float32Array(Math.floor(rendered.length/ratio));
+      for(let i=0;i<ana.length;i++){
+        const s=i*ratio|0;
+        ana[i]=(chL[s]+chR[s])*0.5;
+      }
+    }
+    rendered = null;             // libéré : encore environ 66 Mo
+
+    // --- étape 3 : rendu et encodage des images ---
+    const total=Math.ceil(durWanted*FPS);
+    let vcodec='V_VP8', vcfg=null;
+    for(const c of [{codec:'vp09.00.10.08',m:'V_VP9'},{codec:'vp8',m:'V_VP8'}]){
+      try{
+        const sup=await VideoEncoder.isConfigSupported({codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS});
+        if(sup.supported){ vcfg={codec:c.codec,width:W,height:H,bitrate:bps,framerate:FPS}; vcodec=c.m; break; }
+      }catch(e){}
+    }
+    if(!vcfg){ setRec("Ton navigateur n'a pas d'encodeur vidéo compatible. Utilise l'enregistrement classique.",'err'); resetExport(); return false; }
+
+    vEnc=new VideoEncoder({
+      output:(chunk)=>{ const d=new Uint8Array(chunk.byteLength); chunk.copyTo(d);
+        bytesOut+=d.length;
+        vFrames.push({data:d, ts:chunk.timestamp, key:chunk.type==='key'}); },
+      error:(e)=>{ console.error(e); fastAbort=true; }
+    });
+    vEnc.configure(vcfg);
+
+    offlineMode=true; offlineDt=1/FPS;
+    flowT=0; scrollY=null; levelSmooth=0;
+    if(!freq) freq=new Uint8Array(1024);
+    if(!timeData) timeData=new Uint8Array(1024);
+    const prevSm=new Float32Array(freq.length);
+    const smooth=0.3+(+$('specSmooth').value/100)*0.65;
+
+    for(let f=0; f<total; f++){
+      if(fastAbort) break;
+      if(bytesOut > BUDGET){
+        fastAbort=true;
+        setRec("Arrêt de sécurité : la vidéo dépasse la mémoire disponible. Choisis une qualité plus légère ou une durée plus courte.",'err');
+        break;
+      }
+      const t=start + f/FPS;
+      fillFreqFromPcm(ana, Math.round((t-start)*ANA_RATE)-FFT_N/2, freq, prevSm, smooth);
+      renderScene(t);
+      const vf=new VideoFrame(cv,{timestamp: Math.round(f/FPS*1e6), duration: Math.round(1e6/FPS)});
+      vEnc.encode(vf,{keyFrame: f%60===0});
+      vf.close();
+
+      // On rend la main à chaque image : c'est ce qui évite que le système
+      // considère la page comme figée et ferme l'application.
+      await new Promise(r=>setTimeout(r,0));
+      while(vEnc.encodeQueueSize>6 && !fastAbort) await new Promise(r=>setTimeout(r,20));
+      if(f%10===0){
+        $('recBar').style.width=(f/total*100).toFixed(1)+'%';
+        setRec('Encodage — '+Math.round(f/total*100)+'% ('+(bytesOut/1048576).toFixed(0)+' Mo)','warn');
+      }
+    }
+
+    await vEnc.flush(); vEnc.close(); vEnc=null;
+    offlineMode=false;
+    ana=null;
+
+    if(fastAbort){
+      vFrames=null; aPkts=null;
+      if(!$('recStatus').classList.contains('err')) setRec('Export annulé.','warn');
+      resetExport(); return true;
+    }
+
+    // --- étape 4 : assemblage ---
+    setRec('Assemblage du fichier…','warn');
+    await new Promise(r=>setTimeout(r,0));
+    const bytes=buildWebM({width:W,height:H,vcodec,frames:vFrames,audio:aPkts,
+      opusHead, sampleRate:48000, channels:2});
+    vFrames=null; aPkts=null;                 // libérés avant de créer le fichier
+    const blob=new Blob([bytes],{type:'video/webm'});
+    lastBlob=blob;
+    lastName=(($('songTitle').value||'lyric-video').replace(/[^\w\-]+/g,'_'))+'.webm';
+    dl(blob,lastName);
+    showResult(blob,'webm');
+    setRec('Terminé — '+(blob.size/1048576).toFixed(1)+' Mo.','');
+    resetExport();
+    return true;
+
+  }catch(err){
+    console.error(err);
+    offlineMode=false;
+    try{ if(vEnc) vEnc.close(); }catch(e){}
+    try{ if(aEnc) aEnc.close(); }catch(e){}
+    vFrames=null; aPkts=null; ana=null;
+    setRec("L'export a échoué : "+(err && err.message ? err.message : 'mémoire insuffisante')
+      + ". Essaie une qualité plus légère ou une durée plus courte.",'err');
+    resetExport();
+    return false;
+  }
 }
 function resetExport(){
   offlineMode=false;
@@ -2184,6 +2574,25 @@ $('shareBtn').onclick = async ()=>{
   }
 };
 
+// estimation de la taille selon la qualité et la durée choisies
+function updateQNote(){
+  const bps=+$('recQuality').value;
+  const start=Math.max(0,+$('expStart').value||0);
+  const end=$('expEnd').value? +$('expEnd').value : (audio.duration||0);
+  const d=Math.max(0,end-start);
+  const n=$('qNote');
+  if(!d){ n.textContent=''; return; }
+  const mo=bps*d/8/1048576;
+  n.textContent = 'Environ '+mo.toFixed(0)+' Mo pour '+Math.round(d)+' s.'
+    + (mo>70? ' Au-delà de 70 Mo, découpe le morceau en deux parties.' : '');
+  n.style.color = mo>70 ? 'var(--danger)' : 'var(--muted)';
+}
+['recQuality','expStart','expEnd'].forEach(id=>{
+  $(id).addEventListener('input', updateQNote);
+  $(id).addEventListener('change', updateQNote);
+});
+audio.addEventListener('loadedmetadata', updateQNote);
+
 // disponibilité de l'export rapide
 (function(){
   const n=$('fastNote');
@@ -2210,6 +2619,8 @@ const STYLE_KEYS = ['specType','colorMode','specColor','flowSpread','flowShift',
  'sphDeform','sphWave','sphSpin','sphTilt','sphRings','sphGlow','sphPos','flowSpeed','flowTurb',
  'flowLayers','flowThick','flowGlow','flowPos','textMode','scrollEase','lineGap','visLines',
  'lyricGlow','lyricPulse','edgeFade','fontFam','fontSize','textPos','textColor','activeColor',
+ 'discOn','discStyle','discSize','discX','discY','discSpin','discPulse','discGlow','discRing',
+ 'discShine','discShadow','discArm',
  'ctxLines','anim','shadow','upper','format','bgDark','bgBlur','bgZoom','bgPulse','fade'];
 
 const PRESET_STORE='lyricstudio.presets';
@@ -2229,31 +2640,236 @@ function refreshPresets(sel){
     : '<option value="">— aucun préréglage enregistré —</option>';
   if(sel && names.includes(sel)) el.value=sel;
 }
+let pendingOverwrite=null;
 $('presetSave').onclick = ()=>{
-  const name=(prompt("Nom du préréglage (par exemple : Album Fureur au Sahel)")||'').trim();
-  if(!name) return;
+  const name=($('presetName').value||'').trim();
+  if(!name){ setPreset("Donne d'abord un nom au préréglage.",'warn'); $('presetName').focus(); return; }
   const all=presetsAll();
-  if(all[name] && !confirm("« "+name+" » existe déjà. Le remplacer ?")) return;
+  if(all[name] && pendingOverwrite!==name){
+    pendingOverwrite=name;
+    setPreset("« "+name+" » existe déjà. Appuie encore pour le remplacer.",'warn');
+    return;
+  }
+  pendingOverwrite=null;
   const data={};
   STYLE_KEYS.forEach(k=>{ if($(k)) data[k]=$(k).value; });
   all[name]=data;
-  if(presetsWrite(all)){ refreshPresets(name); setPreset("« "+name+" » enregistré.",''); }
+  if(presetsWrite(all)){
+    refreshPresets(name);
+    $('presetName').value='';
+    setPreset("« "+name+" » enregistré. "+Object.keys(all).length+" préréglage(s) au total.",'');
+  }
 };
+$('presetName').addEventListener('input', ()=>{ pendingOverwrite=null; });
 $('presetLoad').onclick = ()=>{
   const name=$('presetList').value; if(!name) return;
   const d=presetsAll()[name]; if(!d){ setPreset('Préréglage introuvable.','err'); return; }
   STYLE_KEYS.forEach(k=>{ if($(k) && d[k]!==undefined) $(k).value=d[k]; });
-  applyFormat(); toggleTextOpts(); toggleSpecOpts(); toggleSphVariant();
+  applyFormat(); toggleTextOpts(); toggleSpecOpts(); toggleSphVariant(); toggleDiscOpts();
   layoutKey=''; scrollY=null; blurKey='';
   setPreset("« "+name+" » appliqué.",'');
 };
+let pendingDelete=null;
 $('presetDel').onclick = ()=>{
   const name=$('presetList').value; if(!name) return;
-  if(!confirm("Supprimer « "+name+" » ?")) return;
+  if(pendingDelete!==name){
+    pendingDelete=name;
+    setPreset("Appuie encore pour supprimer « "+name+" ».",'warn');
+    return;
+  }
+  pendingDelete=null;
   const all=presetsAll(); delete all[name];
   presetsWrite(all); refreshPresets(); setPreset('Supprimé.','');
 };
+$('presetList').addEventListener('change', ()=>{ pendingDelete=null; });
 refreshPresets();
+
+
+/* ================= REPRISE AUTOMATIQUE =================
+   Tout le travail en cours est enregistré en continu : paroles, repères de
+   temps, réglages, et jusqu'aux fichiers audio et image, conservés dans la
+   base locale du navigateur. Fermer l'application ou la quitter par accident
+   ne fait plus rien perdre. */
+
+const SESS_KEY = 'lyricstudio.session';
+const TEXT_KEYS = ['songTitle','songArtist','lyricsInput','offset','fade',
+                   'expStart','expEnd','recQuality','asrLang','asrMode'];
+
+/* --- petite base locale pour les fichiers volumineux --- */
+function idb(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('lyricstudio',1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore('media'); };
+    r.onsuccess=()=>res(r.result);
+    r.onerror=()=>rej(r.error);
+  });
+}
+async function idbPut(key,val){
+  try{
+    const db=await idb();
+    await new Promise((res,rej)=>{
+      const t=db.transaction('media','readwrite');
+      t.objectStore('media').put(val,key);
+      t.oncomplete=res; t.onerror=()=>rej(t.error);
+    });
+    db.close();
+  }catch(e){ console.warn('media non conservé',e); }
+}
+async function idbGet(key){
+  try{
+    const db=await idb();
+    const v=await new Promise((res,rej)=>{
+      const t=db.transaction('media','readonly');
+      const q=t.objectStore('media').get(key);
+      q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);
+    });
+    db.close(); return v;
+  }catch(e){ return null; }
+}
+async function idbDel(key){
+  try{
+    const db=await idb();
+    await new Promise(res=>{
+      const t=db.transaction('media','readwrite');
+      t.objectStore('media').delete(key); t.oncomplete=res; t.onerror=res;
+    });
+    db.close();
+  }catch(e){}
+}
+
+function collectSession(){
+  const s={v:1, when:Date.now(), lyrics, style:{}, text:{}};
+  STYLE_KEYS.forEach(k=>{ if($(k)) s.style[k]=$(k).value; });
+  TEXT_KEYS.forEach(k=>{ if($(k)) s.text[k]=$(k).value; });
+  return s;
+}
+
+let saveTimer=null, saveDirty=false;
+function markDirty(){
+  saveDirty=true;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveSession, 900);
+}
+function saveSession(){
+  if(!saveDirty) return;
+  try{
+    localStorage.setItem(SESS_KEY, JSON.stringify(collectSession()));
+    saveDirty=false;
+    const el=$('sessNote');
+    if(el){ el.textContent='Travail enregistré'; el.style.opacity='1';
+      setTimeout(()=>{ el.style.opacity='0'; }, 1400); }
+  }catch(e){
+    const el=$('sessNote');
+    if(el){ el.textContent='Sauvegarde impossible : espace saturé'; el.style.opacity='1'; }
+  }
+}
+// à la moindre sortie de l'application, on écrit immédiatement
+window.addEventListener('pagehide', saveSession);
+window.addEventListener('blur', saveSession);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveSession(); });
+
+/* Tout changement de réglage ou de texte déclenche la sauvegarde */
+function watchAll(){
+  STYLE_KEYS.concat(TEXT_KEYS).forEach(k=>{
+    const el=$(k); if(!el) return;
+    el.addEventListener('change', markDirty);
+    el.addEventListener('input', markDirty);
+  });
+}
+
+async function restoreSession(){
+  let s=null;
+  try{ s=JSON.parse(localStorage.getItem(SESS_KEY)||'null'); }catch(e){}
+  if(!s) return false;
+
+  if(s.style) STYLE_KEYS.forEach(k=>{ if($(k) && s.style[k]!==undefined) $(k).value=s.style[k]; });
+  if(s.text)  TEXT_KEYS.forEach(k=>{ if($(k) && s.text[k]!==undefined) $(k).value=s.text[k]; });
+  if(Array.isArray(s.lyrics)) lyrics=s.lyrics;
+
+  applyFormat(); toggleTextOpts(); toggleSpecOpts(); toggleSphVariant();
+  layoutKey=''; scrollY=null; blurKey='';
+  syncIdx=0; renderSyncList();
+
+  // fichiers conservés
+  const a=await idbGet('audio');
+  if(a && a.blob){
+    sourceFile=new File([a.blob], a.name||'audio', {type:a.type||'audio/mpeg'});
+    if(audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl=URL.createObjectURL(a.blob);
+    audio.src=audioUrl; audio.load();
+    $('audioLabel').classList.add('loaded');
+    $('audioLabel').innerHTML='<strong>'+(a.name||'audio')+'</strong>Appuie pour changer de fichier';
+  }
+  const b=await idbGet('bg');
+  if(b && b.blob){
+    if(bgUrl) URL.revokeObjectURL(bgUrl);
+    bgUrl=URL.createObjectURL(b.blob);
+    if((b.type||'').startsWith('video')){ bgVideo.src=bgUrl; bgKind='vid'; bgVideo.play().catch(()=>{}); }
+    else { const im=new Image(); im.onload=()=>{ bgImage=im; bgKind='img'; blurKey=''; }; im.src=bgUrl; }
+    $('bgLabel').classList.add('loaded');
+    $('bgLabel').innerHTML='<strong>'+(b.name||'fond')+'</strong>Appuie pour changer';
+  }
+
+  const dsc=await idbGet('disc');
+  if(dsc && dsc.blob){
+    if(discUrl) URL.revokeObjectURL(discUrl);
+    discUrl=URL.createObjectURL(dsc.blob);
+    const im=new Image();
+    im.onload=()=>{ discImg=im; artCacheKey=''; };
+    im.src=discUrl;
+    $('discLabel').classList.add('loaded');
+    $('discLabel').innerHTML='<strong>'+(dsc.name||'pochette')+'</strong>Appuie pour changer';
+  }
+  toggleDiscOpts();
+
+  const n=lyrics.filter(l=>l.time!=null).length;
+  const el=$('sessNote');
+  if(el){
+    el.textContent = 'Travail précédent restauré'
+      + (n? ' — '+n+' repères de temps' : '')
+      + (a? ', audio compris' : '');
+    el.style.opacity='1';
+    setTimeout(()=>{ el.style.opacity='0'; }, 5000);
+  }
+  return true;
+}
+
+$('sessClear').onclick = ()=>{
+  if(sessClearArm){
+    localStorage.removeItem(SESS_KEY);
+    idbDel('audio'); idbDel('bg'); idbDel('disc');
+    location.reload();
+    return;
+  }
+  sessClearArm=true;
+  $('sessClear').textContent='Confirmer : tout effacer';
+  setTimeout(()=>{ sessClearArm=false; $('sessClear').textContent='Repartir de zéro'; },4000);
+};
+let sessClearArm=false;
+
+/* --- sauvegarde de secours dans un fichier --- */
+$('backupSave').onclick = ()=>{
+  const data={ v:2, session:collectSession(), presets:presetsAll() };
+  dl(new Blob([JSON.stringify(data)],{type:'application/json'}),
+     'lyric-studio-sauvegarde-'+new Date().toISOString().slice(0,10)+'.json');
+};
+$('backupFile').onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=async ()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(d.presets) presetsWrite(Object.assign(presetsAll(), d.presets));
+      if(d.session){
+        localStorage.setItem(SESS_KEY, JSON.stringify(d.session));
+        await restoreSession();
+        refreshPresets();
+      }
+      alert('Sauvegarde restaurée.');
+    }catch(err){ alert('Fichier de sauvegarde illisible.'); }
+  };
+  r.readAsText(f);
+};
 
 /* ---------- Installation ---------- */
 let deferredPrompt=null;
@@ -2324,11 +2940,19 @@ function toggleSphVariant(){
 }
 $('sphVariant').onchange = toggleSphVariant;
 toggleSphVariant();
+
+function toggleDiscOpts(){ $('discOpts').style.display = $('discOn').value==='1'?'block':'none'; }
+$('discOn').onchange = toggleDiscOpts;
+toggleDiscOpts();
 $('specType').onchange = toggleSpecOpts;
 toggleSpecOpts();
 
 applyFormat();
 draw();
+
+// surveillance des réglages, puis reprise du travail précédent
+watchAll();
+restoreSession().catch(e=>console.warn('reprise impossible',e));
 })();
 </script>
 </body>
